@@ -20272,15 +20272,6 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 <!-- V64: iOS answer double-fire fix from QA report -->
 <style id="bp-v64-ios-answer-fix-style">
-  .bp-version-v64{
-    position:fixed;
-    left:6px;
-    bottom:4px;
-    z-index:99999;
-    font:10px monospace;
-    color:rgba(255,255,255,.38);
-    pointer-events:none;
-  }
   .ans-btn{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 </style>
 <script id="bp-v64-ios-answer-fix">
@@ -20288,14 +20279,7 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   if(window.__bpV64AnswerFix) return;
   window.__bpV64AnswerFix=true;
 
-  function label(){
-    var d=document.querySelector('.bp-version-v64');
-    if(!d){
-      d=document.createElement('div');
-      d.className='bp-version-v64';
-      d.textContent='v64 iOS answer fix';
-      document.body.appendChild(d);
-    }
+  function label(){}
   }
 
   function handleAnswerPointer(e){
@@ -20361,26 +20345,10 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
     }
   }
 
-  .bp-version-v65{
-    position:fixed;
-    left:6px;
-    bottom:18px;
-    z-index:99999;
-    font:10px monospace;
-    color:rgba(255,255,255,.38);
-    pointer-events:none;
-  }
-</style>
+  </style>
 <script id="bp-v65-label-only">
 (function(){
-  function label(){
-    var d=document.querySelector('.bp-version-v65');
-    if(!d){
-      d=document.createElement('div');
-      d.className='bp-version-v65';
-      d.textContent='v65 yellow hover fix';
-      document.body.appendChild(d);
-    }
+  function label(){}
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', label);
   else label();
@@ -20390,5 +20358,30 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 
 <!-- v72 hard rollback to confirmed working v65 -->
+
+<!-- v73: hide/remove visible version labels only -->
+<style id="bp-v73-hide-version-labels">
+  .bp-version-v64,
+  .bp-version-v65,
+  .bp-version-v66,
+  .bp-version-v67,
+  .bp-version-v68,
+  .bp-version-stable,
+  #stableVersionLabel {
+    display:none!important;
+  }
+</style>
+<script id="bp-v73-remove-version-labels">
+(function(){
+  function removeLabels(){
+    document.querySelectorAll('.bp-version-v64,.bp-version-v65,.bp-version-v66,.bp-version-v67,.bp-version-v68,.bp-version-stable,#stableVersionLabel')
+      .forEach(function(el){ try{ el.remove(); }catch(e){} });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', removeLabels);
+  else removeLabels();
+  window.addEventListener('load', removeLabels);
+})();
+</script>
+
 </body>
 </html>
