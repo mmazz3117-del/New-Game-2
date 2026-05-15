@@ -20407,5 +20407,360 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 
 <!-- v72 hard rollback to confirmed working v65 -->
+
+<!-- v75: stronger question rotation + safer Mosh Pit logic.
+     Built on working v74. Does not touch answer-click logic. -->
+<script id="bp-v75-rotation-mosh-fix">
+(function(){
+  if(window.__bpV75RotationMosh) return;
+  window.__bpV75RotationMosh = true;
+
+  const RECENT_KEY = "BP_recent_questions_v75";
+  const ARTIST_KEY = "BP_recent_artists_v75";
+  const RECENT_LIMIT = 450;
+  const ARTIST_LIMIT = 90;
+
+  function clean(s){
+    return String(s || "")
+      .toLowerCase()
+      .replace(/[’‘]/g,"'")
+      .replace(/&/g,"and")
+      .replace(/[^a-z0-9'\s]+/g," ")
+      .replace(/\s+/g," ")
+      .trim();
+  }
+
+  function compact(s){
+    return clean(s).replace(/[^a-z0-9]+/g,"");
+  }
+
+  function loadList(key){
+    try{
+      const arr = JSON.parse(localStorage.getItem(key) || "[]");
+      return Array.isArray(arr) ? arr.filter(Boolean) : [];
+    }catch(e){ return []; }
+  }
+
+  function saveList(key, arr, limit){
+    try{ localStorage.setItem(key, JSON.stringify(arr.slice(-limit))); }catch(e){}
+  }
+
+  let recentQuestions = loadList(RECENT_KEY).slice(-RECENT_LIMIT);
+  let recentArtists = loadList(ARTIST_KEY).slice(-ARTIST_LIMIT);
+  let sessionSubjects = new Set();
+  let sessionArtists = new Set();
+
+  function remember(list, key, val, limit){
+    if(!val) return list;
+    list = list.filter(x => x !== val);
+    list.push(val);
+    saveList(key, list, limit);
+    return list;
+  }
+
+  function titleFromQ(q){
+    const text = String(q && q.q || "");
+    const m = text.match(/['"“”‘’]([^'"“”‘’]{2,90})['"“”‘’]/);
+    return m && m[1] ? compact(m[1]) : "";
+  }
+
+  function answerFromQ(q){
+    try{
+      return compact(q.a[q.c] || "");
+    }catch(e){ return ""; }
+  }
+
+  function subjectSig(q){
+    if(!q) return "";
+    const title = titleFromQ(q);
+    const ans = answerFromQ(q);
+    const decade = compact(q._did || q.decade || q._sourceDid || "");
+    if(title && ans) return "song:" + decade + ":" + title + ":" + ans;
+    if(title) return "song:" + decade + ":" + title;
+
+    const stem = clean(q.q || "")
+      .replace(/\b(which|what|who|whose|artist|band|group|song|hit|released|performed|sang|most|closely|associated|with|mainstream|radio|classic|famous|question|answer|is|was|by|the|a|an)\b/g," ")
+      .replace(/\s+/g," ")
+      .trim()
+      .split(" ")
+      .filter(w => w.length > 2)
+      .slice(0,8)
+      .join("");
+    return "stem:" + decade + ":" + ans + ":" + compact(stem);
+  }
+
+  function artistSig(q){
+    return answerFromQ(q);
+  }
+
+  function shuffle(arr){
+    const a = [...arr];
+    for(let i=a.length-1;i>0;i--){
+      let r = Math.random();
+      try{
+        if(window.crypto && crypto.getRandomValues){
+          const b = new Uint32Array(1);
+          crypto.getRandomValues(b);
+          r = b[0] / 4294967296;
+        }
+      }catch(e){}
+      const j = Math.floor(r * (i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function getDecades(){
+    try{
+      if(selectedDecades && selectedDecades.has && selectedDecades.has("all")){
+        return Object.keys(TRIVIA[difficulty] || {});
+      }
+      return [...selectedDecades];
+    }catch(e){
+      return Object.keys((TRIVIA && TRIVIA[difficulty]) || {});
+    }
+  }
+
+  function buildPoolV75(){
+    const decades = getDecades();
+    let pool = [];
+
+    decades.forEach(did => {
+      const qs = ((TRIVIA[difficulty] || {})[did] || []);
+      const filtered = (selectedGenres && selectedGenres.has && !selectedGenres.has("all"))
+        ? qs.filter(q => selectedGenres.has(q.genre))
+        : qs;
+
+      filtered.forEach(q => {
+        if(typeof isPartySafeQuestion === "function" && !isPartySafeQuestion(q)) return;
+        const actualDid = typeof getActualDecadeId === "function" ? getActualDecadeId(q, did) : did;
+        const copy = {...q, _sourceDid:did, _did:actualDid};
+        copy._sig = subjectSig(copy);
+        copy._artistSig = artistSig(copy);
+        pool.push(copy);
+      });
+    });
+
+    // Collapse exact same subject/answer variations before game begins.
+    const map = new Map();
+    shuffle(pool).forEach(q => {
+      if(!map.has(q._sig)) map.set(q._sig, q);
+    });
+
+    return shuffle([...map.values()]);
+  }
+
+  function chooseQuestion(candidates){
+    if(!candidates || !candidates.length) return null;
+
+    function rank(q){
+      let score = 0;
+      if(seenThisGame && seenThisGame.has && seenThisGame.has(q.q)) score += 10000;
+      if(sessionSubjects.has(q._sig)) score += 5000;
+      if(recentQuestions.includes(q._sig)) score += 1200;
+      if(sessionArtists.has(q._artistSig)) score += 700;
+      if(recentArtists.includes(q._artistSig)) score += 250;
+      return score + Math.random();
+    }
+
+    const sorted = [...candidates].sort((a,b)=>rank(a)-rank(b));
+    const q = sorted[0];
+    if(!q) return null;
+
+    try{ seenThisGame.add(q.q); }catch(e){}
+    sessionSubjects.add(q._sig);
+    sessionArtists.add(q._artistSig);
+    recentQuestions = remember(recentQuestions, RECENT_KEY, q._sig, RECENT_LIMIT);
+    recentArtists = remember(recentArtists, ARTIST_KEY, q._artistSig, ARTIST_LIMIT);
+    try{ lastQText = q.q; }catch(e){}
+
+    // Remove all same-subject variants from the current queue immediately.
+    try{
+      for(let i=gameQueue.length-1;i>=0;i--){
+        const g = gameQueue[i];
+        if(!g._sig) g._sig = subjectSig(g);
+        if(g._sig === q._sig || g.q === q.q) gameQueue.splice(i,1);
+      }
+    }catch(e){}
+
+    return q;
+  }
+
+  try{
+    _buildPool = buildPoolV75;
+
+    buildQueues = function(){
+      try{ seenThisGame = new Set(); }catch(e){}
+      sessionSubjects = new Set();
+      sessionArtists = new Set();
+      recentQuestions = loadList(RECENT_KEY).slice(-RECENT_LIMIT);
+      recentArtists = loadList(ARTIST_KEY).slice(-ARTIST_LIMIT);
+      gameQueue = _buildPool();
+      try{ addLog("🔀 Strong question rotation active."); }catch(e){}
+    };
+
+    _refillQueue = function(){
+      try{ seenThisGame = new Set(); }catch(e){}
+      sessionSubjects = new Set();
+      gameQueue = _buildPool();
+    };
+
+    getQ = function(did){
+      let avail = (gameQueue || []).filter(q => {
+        try{ return !seenThisGame.has(q.q); }catch(e){ return true; }
+      });
+      let decadeAvail = avail.filter(q => q._did === did);
+      if(!decadeAvail.length) decadeAvail = avail;
+      if(!decadeAvail.length){
+        _refillQueue();
+        avail = (gameQueue || []).filter(q => {
+          try{ return !seenThisGame.has(q.q); }catch(e){ return true; }
+        });
+        decadeAvail = avail.filter(q => q._did === did);
+        if(!decadeAvail.length) decadeAvail = avail;
+      }
+      return chooseQuestion(decadeAvail);
+    };
+
+    getFilteredQ = function(decadeId){
+      let avail = (gameQueue || []).filter(q => {
+        const unseen = (()=>{ try{return !seenThisGame.has(q.q);}catch(e){return true;} })();
+        const matches = typeof questionMatchesActiveFilters === "function" ? questionMatchesActiveFilters(q) : true;
+        return unseen && matches;
+      });
+      if(!avail.length){
+        _refillQueue();
+        avail = (gameQueue || []).filter(q => {
+          const unseen = (()=>{ try{return !seenThisGame.has(q.q);}catch(e){return true;} })();
+          const matches = typeof questionMatchesActiveFilters === "function" ? questionMatchesActiveFilters(q) : true;
+          return unseen && matches;
+        });
+      }
+      return chooseQuestion(avail);
+    };
+  }catch(e){
+    console.warn("v75 question rotation patch could not install", e);
+  }
+
+  // Mosh Pit fix: never let the leader swap backward; only offer nearby/ahead targets.
+  function playerPosition(p){
+    return Number((p && (p.pos ?? p.position ?? p.loc)) || 0);
+  }
+
+  function isLeader(player){
+    const pos = playerPosition(player);
+    try{
+      return players.every(other => other === player || playerPosition(other) <= pos);
+    }catch(e){ return false; }
+  }
+
+  function eligibleMoshTargets(player){
+    const pos = playerPosition(player);
+    try{
+      return players.filter(p => {
+        if(!p || p === player || p.finished) return false;
+        const targetPos = playerPosition(p);
+        const dist = Math.abs(targetPos - pos);
+        // Only players ahead or close by. Never swap backward.
+        return targetPos > pos && dist <= 12;
+      });
+    }catch(e){ return []; }
+  }
+
+  try{
+    if(typeof window.applySpecial === "function" && !window.applySpecial.__bpV75Mosh){
+      const oldApplySpecial = window.applySpecial;
+      window.applySpecial = function(space, player){
+        try{
+          const type = String((space && (space.type || space.name || space.id)) || "").toLowerCase();
+          const label = String((space && (space.label || space.title || space.desc)) || "").toLowerCase();
+          const isMosh = type.includes("mosh") || label.includes("mosh");
+          if(isMosh){
+            if(isLeader(player)){
+              try{ addLog("🤘 Mosh Pit: already leading — no backward swap."); }catch(e){}
+              return;
+            }
+            const targets = eligibleMoshTargets(player);
+            if(!targets.length){
+              try{ addLog("🤘 Mosh Pit: no nearby player ahead to swap with."); }catch(e){}
+              return;
+            }
+            // Store allowed targets so existing swap UI, if used by downstream code,
+            // can be filtered by the patched showSwapOptions below.
+            window.__bpV75AllowedMoshTargets = targets;
+          }
+        }catch(e){}
+        return oldApplySpecial.apply(this, arguments);
+      };
+      window.applySpecial.__bpV75Mosh = true;
+      try{ applySpecial = window.applySpecial; }catch(e){}
+    }
+  }catch(e){}
+
+  try{
+    if(typeof window.showSwapOptions === "function" && !window.showSwapOptions.__bpV75Mosh){
+      const oldShowSwapOptions = window.showSwapOptions;
+      window.showSwapOptions = function(player){
+        try{
+          if(isLeader(player)){
+            try{ addLog("🤘 Mosh Pit skipped: leader keeps the spotlight."); }catch(e){}
+            return;
+          }
+          const targets = eligibleMoshTargets(player);
+          if(!targets.length){
+            try{ addLog("🤘 Mosh Pit: no nearby player ahead to swap with."); }catch(e){}
+            return;
+          }
+          window.__bpV75AllowedMoshTargets = targets;
+        }catch(e){}
+        return oldShowSwapOptions.apply(this, arguments);
+      };
+      window.showSwapOptions.__bpV75Mosh = true;
+      try{ showSwapOptions = window.showSwapOptions; }catch(e){}
+    }
+  }catch(e){}
+
+  // Filter dynamically created swap option buttons, in case the original UI builds all players.
+  const filterSwapOptions = function(){
+    try{
+      const allowed = window.__bpV75AllowedMoshTargets;
+      if(!allowed || !allowed.length) return;
+      const names = new Set(allowed.map(p => String(p.name || "")));
+      document.querySelectorAll(".swap-opt").forEach(btn => {
+        const txt = btn.textContent || "";
+        let ok = false;
+        names.forEach(n => { if(n && txt.includes(n)) ok = true; });
+        if(!ok) btn.style.display = "none";
+      });
+    }catch(e){}
+  };
+
+  try{
+    new MutationObserver(filterSwapOptions).observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+
+  window.BP_CLEAR_QUESTION_HISTORY = function(){
+    recentQuestions = [];
+    recentArtists = [];
+    saveList(RECENT_KEY, recentQuestions, RECENT_LIMIT);
+    saveList(ARTIST_KEY, recentArtists, ARTIST_LIMIT);
+    try{ addLog("🧹 Question and artist history cleared."); }catch(e){}
+    return "Question and artist history cleared.";
+  };
+
+  window.BP_ROTATION_STATUS = function(){
+    return {
+      recentQuestions: recentQuestions.length,
+      recentArtists: recentArtists.length,
+      sessionSubjects: sessionSubjects.size,
+      sessionArtists: sessionArtists.size,
+      queueRemaining: (gameQueue || []).length
+    };
+  };
+
+  console.log("v75 rotation + mosh fix active");
+})();
+</script>
+
 </body>
 </html>
