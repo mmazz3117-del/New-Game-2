@@ -20762,5 +20762,253 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 })();
 </script>
 
+
+<!-- v76: lightweight game-show polish. Built on v75; answer-click logic untouched. -->
+<style id="bp-v76-game-show-polish-css">
+  /* Subtle game-show spotlight feel for question screen */
+  .q-overlay:not(.hidden){
+    background:
+      radial-gradient(ellipse at 50% 18%, rgba(245,197,24,.10), transparent 38%),
+      radial-gradient(ellipse at 18% 85%, rgba(255,46,146,.08), transparent 42%),
+      radial-gradient(ellipse at 82% 85%, rgba(76,201,240,.07), transparent 42%),
+      radial-gradient(ellipse at center,rgba(0,0,0,.80) 0%,rgba(0,0,0,.96) 100%) !important;
+  }
+
+  .q-box{
+    animation:bpV76QuestionPop .34s cubic-bezier(.34,1.56,.64,1) both !important;
+  }
+  @keyframes bpV76QuestionPop{
+    from{opacity:0;transform:translateY(18px) scale(.96);}
+    to{opacity:1;transform:translateY(0) scale(1);}
+  }
+
+  /* Player up banner */
+  .bp-v76-player-up{
+    position:fixed;
+    top:calc(env(safe-area-inset-top, 0px) + 62px);
+    left:50%;
+    transform:translateX(-50%);
+    z-index:670;
+    padding:8px 18px;
+    border-radius:999px;
+    border:1px solid rgba(245,197,24,.55);
+    background:rgba(0,0,0,.72);
+    color:#f5c518;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.05rem;
+    letter-spacing:.13em;
+    text-transform:uppercase;
+    box-shadow:0 0 22px rgba(245,197,24,.18);
+    pointer-events:none;
+    animation:bpV76PlayerUp 1.35s ease-out forwards;
+    white-space:nowrap;
+  }
+  @keyframes bpV76PlayerUp{
+    0%{opacity:0;transform:translateX(-50%) translateY(-12px) scale(.92);}
+    18%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+    78%{opacity:1;}
+    100%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.97);}
+  }
+
+  /* Points pop-up */
+  .bp-v76-points-pop{
+    position:fixed;
+    left:50%;
+    top:45%;
+    transform:translate(-50%,-50%);
+    z-index:720;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2rem, 10vw, 4rem);
+    letter-spacing:.08em;
+    color:#52b788;
+    text-shadow:0 0 22px rgba(82,183,136,.85), 0 3px 10px rgba(0,0,0,.6);
+    pointer-events:none;
+    animation:bpV76PointsPop .95s cubic-bezier(.2,1.35,.35,1) forwards;
+  }
+  @keyframes bpV76PointsPop{
+    0%{opacity:0;transform:translate(-50%,-35%) scale(.55);}
+    22%{opacity:1;transform:translate(-50%,-50%) scale(1.15);}
+    75%{opacity:1;transform:translate(-50%,-68%) scale(1);}
+    100%{opacity:0;transform:translate(-50%,-86%) scale(.92);}
+  }
+
+  /* Streak toast/badge */
+  .bp-v76-streak-toast{
+    position:fixed;
+    right:12px;
+    top:calc(env(safe-area-inset-top, 0px) + 70px);
+    z-index:720;
+    padding:8px 13px;
+    border-radius:12px;
+    background:linear-gradient(135deg,rgba(245,197,24,.95),rgba(255,149,0,.95));
+    color:#080808;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:.11em;
+    box-shadow:0 8px 28px rgba(245,197,24,.35);
+    pointer-events:none;
+    animation:bpV76Streak .9s ease-out forwards;
+  }
+  @keyframes bpV76Streak{
+    0%{opacity:0;transform:translateY(-12px) scale(.86);}
+    25%{opacity:1;transform:translateY(0) scale(1.08);}
+    80%{opacity:1;transform:translateY(0) scale(1);}
+    100%{opacity:0;transform:translateY(-8px) scale(.96);}
+  }
+
+  /* Make existing correct/wrong states feel a little more game-show without changing logic */
+  .ans-btn.correct{
+    box-shadow:0 0 35px rgba(82,183,136,.72),0 0 70px rgba(82,183,136,.18),0 8px 24px rgba(0,0,0,.4) !important;
+  }
+  .ans-btn.wrong{
+    animation:wrongShake .42s cubic-bezier(.4,1,.6,1) !important;
+  }
+
+  @media(max-width:660px){
+    .bp-v76-player-up{
+      top:calc(env(safe-area-inset-top, 0px) + 48px);
+      font-size:.88rem;
+      padding:6px 13px;
+      max-width:92vw;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .bp-v76-streak-toast{
+      top:calc(env(safe-area-inset-top, 0px) + 54px);
+      right:8px;
+      font-size:.82rem;
+      padding:6px 10px;
+    }
+  }
+</style>
+
+<script id="bp-v76-game-show-polish-script">
+(function(){
+  if(window.__bpV76GameShowPolish) return;
+  window.__bpV76GameShowPolish = true;
+
+  let lastQuestionText = "";
+  const streaks = new Map();
+
+  function currentPlayerObj(){
+    try{
+      return players && players[curPlayer] ? players[curPlayer] : null;
+    }catch(e){ return null; }
+  }
+
+  function playerName(){
+    const p = currentPlayerObj();
+    return (p && p.name) ? p.name : "Player";
+  }
+
+  function showPlayerUp(){
+    try{
+      const q = document.getElementById("qOverlay");
+      if(!q || q.classList.contains("hidden")) return;
+
+      const questionText = document.getElementById("qText");
+      const txt = questionText ? questionText.textContent : "";
+      if(!txt || txt === lastQuestionText) return;
+      lastQuestionText = txt;
+
+      const old = document.querySelector(".bp-v76-player-up");
+      if(old) old.remove();
+
+      const el = document.createElement("div");
+      el.className = "bp-v76-player-up";
+      el.textContent = playerName() + " is up!";
+      document.body.appendChild(el);
+      setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 1450);
+    }catch(e){}
+  }
+
+  function showPoints(points){
+    if(!points || points <= 0) return;
+    try{
+      const el = document.createElement("div");
+      el.className = "bp-v76-points-pop";
+      el.textContent = "+" + points;
+      document.body.appendChild(el);
+      setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 1000);
+    }catch(e){}
+  }
+
+  function showStreak(count){
+    if(count < 3) return;
+    try{
+      const old = document.querySelector(".bp-v76-streak-toast");
+      if(old) old.remove();
+
+      const el = document.createElement("div");
+      el.className = "bp-v76-streak-toast";
+      el.textContent = "🔥 " + count + " IN A ROW!";
+      document.body.appendChild(el);
+      setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 950);
+    }catch(e){}
+  }
+
+  function playerKey(){
+    const p = currentPlayerObj();
+    if(!p) return "player";
+    return String(p.name || curPlayer || "player");
+  }
+
+  // Passive click listener only observes final button classes shortly after v64 answer handler runs.
+  // It does not call checkAns, does not preventDefault, and does not alter answer state.
+  document.addEventListener("click", function(e){
+    const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+
+    setTimeout(function(){
+      try{
+        if(btn.classList.contains("correct")){
+          const k = playerKey();
+          const next = (streaks.get(k) || 0) + 1;
+          streaks.set(k, next);
+
+          let pts = 1;
+          try{
+            if(typeof difficulty !== "undefined"){
+              pts = difficulty === "hard" ? 3 : difficulty === "medium" ? 2 : 1;
+            }
+          }catch(e){}
+          showPoints(pts);
+          showStreak(next);
+        } else if(btn.classList.contains("wrong")){
+          streaks.set(playerKey(), 0);
+        }
+      }catch(err){}
+    }, 70);
+  }, true);
+
+  // Use a very small observer only on qText content to show the “Player is up” banner.
+  // This avoids touching buttons/answer state.
+  function watchQuestionText(){
+    const qText = document.getElementById("qText");
+    if(!qText || qText.__bpV76Watched) return;
+    qText.__bpV76Watched = true;
+    try{
+      new MutationObserver(function(){ setTimeout(showPlayerUp, 30); })
+        .observe(qText, {childList:true, subtree:true, characterData:true});
+    }catch(e){}
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", function(){
+      watchQuestionText();
+      setTimeout(showPlayerUp, 250);
+    });
+  } else {
+    watchQuestionText();
+    setTimeout(showPlayerUp, 250);
+  }
+
+  // Keep observer hookup available after overlays are recreated.
+  setTimeout(watchQuestionText, 1000);
+
+  console.log("v76 lightweight game-show polish active");
+})();
+</script>
+
 </body>
 </html>
