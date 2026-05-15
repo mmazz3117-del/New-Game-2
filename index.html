@@ -1190,6 +1190,23 @@ header{position:relative;z-index:5;text-align:center;padding:10px 20px 6px;borde
 .bp-log-title-row{display:flex!important;align-items:center!important;gap:8px!important;width:100%!important;}
 
 </style>
+
+<!-- v74: CSS-only hide version labels; no gameplay JS touched -->
+<style id="bp-v74-hide-version-labels-css-only">
+  .bp-version-v64,
+  .bp-version-v65,
+  .bp-version-v66,
+  .bp-version-v67,
+  .bp-version-v68,
+  .bp-version-stable,
+  #stableVersionLabel {
+    display:none!important;
+    visibility:hidden!important;
+    opacity:0!important;
+    pointer-events:none!important;
+  }
+</style>
+
 </head>
 <body>
 
@@ -20272,6 +20289,15 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 <!-- V64: iOS answer double-fire fix from QA report -->
 <style id="bp-v64-ios-answer-fix-style">
+  .bp-version-v64{
+    position:fixed;
+    left:6px;
+    bottom:4px;
+    z-index:99999;
+    font:10px monospace;
+    color:rgba(255,255,255,.38);
+    pointer-events:none;
+  }
   .ans-btn{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 </style>
 <script id="bp-v64-ios-answer-fix">
@@ -20279,7 +20305,14 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   if(window.__bpV64AnswerFix) return;
   window.__bpV64AnswerFix=true;
 
-  function label(){}
+  function label(){
+    var d=document.querySelector('.bp-version-v64');
+    if(!d){
+      d=document.createElement('div');
+      d.className='bp-version-v64';
+      d.textContent='v64 iOS answer fix';
+      document.body.appendChild(d);
+    }
   }
 
   function handleAnswerPointer(e){
@@ -20345,10 +20378,26 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
     }
   }
 
-  </style>
+  .bp-version-v65{
+    position:fixed;
+    left:6px;
+    bottom:18px;
+    z-index:99999;
+    font:10px monospace;
+    color:rgba(255,255,255,.38);
+    pointer-events:none;
+  }
+</style>
 <script id="bp-v65-label-only">
 (function(){
-  function label(){}
+  function label(){
+    var d=document.querySelector('.bp-version-v65');
+    if(!d){
+      d=document.createElement('div');
+      d.className='bp-version-v65';
+      d.textContent='v65 yellow hover fix';
+      document.body.appendChild(d);
+    }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', label);
   else label();
@@ -20358,30 +20407,5 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 
 <!-- v72 hard rollback to confirmed working v65 -->
-
-<!-- v73: hide/remove visible version labels only -->
-<style id="bp-v73-hide-version-labels">
-  .bp-version-v64,
-  .bp-version-v65,
-  .bp-version-v66,
-  .bp-version-v67,
-  .bp-version-v68,
-  .bp-version-stable,
-  #stableVersionLabel {
-    display:none!important;
-  }
-</style>
-<script id="bp-v73-remove-version-labels">
-(function(){
-  function removeLabels(){
-    document.querySelectorAll('.bp-version-v64,.bp-version-v65,.bp-version-v66,.bp-version-v67,.bp-version-v68,.bp-version-stable,#stableVersionLabel')
-      .forEach(function(el){ try{ el.remove(); }catch(e){} });
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', removeLabels);
-  else removeLabels();
-  window.addEventListener('load', removeLabels);
-})();
-</script>
-
 </body>
 </html>
