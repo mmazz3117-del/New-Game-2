@@ -5396,123 +5396,278 @@ function shuffleArray(arr){
   return a;
 }
 
-// ─── QUESTION QUEUE SYSTEM ──────────────────────────────
-// One global shuffled queue per game. Questions are never
-// repeated until every question in the pool has been seen.
-let gameQueue=[];        // questions left to ask this game
-let seenThisGame=new Set(); // q.q strings seen this game
-let lastQText='';        // prevent back-to-back repeat on refill
+// ─── V77 STRICT QUESTION ROTATION / ARTIST COOLDOWN ──────────────────────
+// Avoid exact repeats, same-subject repeats, and artist/topic clusters.
+// This is edited into the core picker instead of appended as another wrapper.
+
+let gameQueue=[];
+let seenThisGame=new Set();
+let seenSubjectsThisGame=new Set();
+let seenArtistsThisGame=[];
+let lastQText='';
+
+const BP_RECENT_Q_KEY='BP_recent_question_subjects_v77';
+const BP_RECENT_A_KEY='BP_recent_artists_v77';
+const BP_RECENT_Q_LIMIT=700;
+const BP_RECENT_A_LIMIT=120;
+const BP_ARTIST_COOLDOWN=10;
+
+function bpNorm(s){
+  return String(s||'')
+    .toLowerCase()
+    .replace(/[’‘]/g,"'")
+    .replace(/&/g,' and ')
+    .replace(/[^a-z0-9'\s]+/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function bpCompact(s){ return bpNorm(s).replace(/[^a-z0-9]+/g,''); }
+
+function bpLoadList(key){
+  try{
+    const arr=JSON.parse(localStorage.getItem(key)||'[]');
+    return Array.isArray(arr)?arr.filter(Boolean):[];
+  }catch(e){return [];}
+}
+function bpSaveList(key, arr, limit){
+  try{ localStorage.setItem(key, JSON.stringify(arr.slice(-limit))); }catch(e){}
+}
+let bpRecentSubjects=bpLoadList(BP_RECENT_Q_KEY).slice(-BP_RECENT_Q_LIMIT);
+let bpRecentArtists=bpLoadList(BP_RECENT_A_KEY).slice(-BP_RECENT_A_LIMIT);
+
+function bpRemember(list, key, val, limit){
+  if(!val) return list;
+  list=list.filter(x=>x!==val);
+  list.push(val);
+  bpSaveList(key,list,limit);
+  return list;
+}
 
 function shuffleArray(arr){
   const a=[...arr];
   for(let i=a.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
+    let r=Math.random();
+    try{
+      if(window.crypto && crypto.getRandomValues){
+        const b=new Uint32Array(1);
+        crypto.getRandomValues(b);
+        r=b[0]/4294967296;
+      }
+    }catch(e){}
+    const j=Math.floor(r*(i+1));
     [a[i],a[j]]=[a[j],a[i]];
   }
   return a;
 }
 
-function buildQueues(){
-  // Build the full eligible pool once
-  seenThisGame=new Set();
-  lastQText='';
-  gameQueue=_buildPool();
+function bpQuotedTitle(q){
+  const text=String(q&&q.q||'');
+  const m=text.match(/['"“”‘’]([^'"“”‘’]{2,90})['"“”‘’]/);
+  return m&&m[1]?bpCompact(m[1]):'';
 }
 
+function bpCorrectAnswer(q){
+  try{return bpCompact(q.a[q.c]||'');}catch(e){return '';}
+}
 
-// ── V19 PARTY-SAFE QUESTION FILTER ─────────────────────────────
-// Keeps the game casual: no production trivia, chart minutiae, exact years,
-// country counts, “behind the scenes” recording/session facts, or themed cue wording.
-function isPartySafeQuestion(q){
-  if(!q || !q.q || !Array.isArray(q.a)) return false;
-  const prompt=String(q.q).toLowerCase();
-  const answers=q.a.map(x=>String(x).toLowerCase());
-  const all=(prompt+' '+answers.join(' ')).replace(/[’‘]/g,"'");
-
-  // Remove game-show cue language that feels like it gives hints or sounds awkward.
-  const cuePatterns=[
-    /arena screen/, /arena lights/, /backstage pass check/, /the crowd/, /spotlight clue/,
-    /flashes this clue/, /lights flash/, /stage clue/, /crowd clue/
+function bpTopicArtist(q){
+  const combined=bpNorm(((q&&q.q)||'')+' '+((q&&q.a)?q.a.join(' '):''));
+  const topics=[
+    ['buddyholly', /buddy holly|the crickets|crickets\b|big bopper|ritchie valens|day the music died/],
+    ['elvispresley', /elvis presley|\belvis\b|the king of rock and roll|graceland|sun studio/],
+    ['chuckberry', /chuck berry|johnny b goode/],
+    ['littlerichard', /little richard|tutti frutti|good golly miss molly|long tall sally/],
+    ['raycharles', /ray charles/],
+    ['beatles', /the beatles|\bbeatles\b|john lennon|paul mccartney|george harrison|ringo starr|hey jude|liverpool/],
+    ['rollingstones', /rolling stones|mick jagger|keith richards|paint it black|satisfaction/],
+    ['bobdylan', /bob dylan|zimmerman|newport folk/],
+    ['arethafranklin', /aretha franklin|queen of soul|respect/],
+    ['supremes', /the supremes|diana ross/],
+    ['fleetwoodmac', /fleetwood mac|stevie nicks|lindsey buckingham|rumours|go your own way|dreams\b/],
+    ['ledzeppelin', /led zeppelin|stairway to heaven|robert plant|jimmy page|kashmir/],
+    ['queen', /\bqueen\b|freddie mercury|bohemian rhapsody/],
+    ['abba', /\babba\b|dancing queen|waterloo/],
+    ['michaeljackson', /michael jackson|thriller|billie jean|beat it/],
+    ['madonna', /madonna|like a virgin|material girl/],
+    ['prince', /\bprince\b|purple rain|when doves cry/],
+    ['bonjovi', /bon jovi|livin on a prayer|you give love a bad name/],
+    ['nirvana', /nirvana|smells like teen spirit|kurt cobain/],
+    ['pearljam', /pearl jam|eddie vedder/],
+    ['oasis', /\boasis\b|wonderwall|champagne supernova/],
+    ['cranberries', /cranberries|dolores o'riordan|zombie/],
+    ['greenday', /green day|basket case|boulevard of broken dreams/],
+    ['blink182', /blink 182|all the small things|what's my age again/],
+    ['falloutboy', /fall out boy|sugar we're goin down|dance dance/],
+    ['mychemicalromance', /my chemical romance|black parade|helena/],
+    ['eminem', /eminem|slim shady|lose yourself|stan\b/],
+    ['tupac', /2pac|tupac|california love|dear mama/],
+    ['notoriousbig', /notorious b i g|biggie|big poppa|juicy/],
+    ['beyonce', /beyonce|crazy in love|single ladies/],
+    ['britneyspears', /britney spears|baby one more time|toxic/],
+    ['tlc', /\btlc\b|no scrubs|waterfalls/],
+    ['usher', /\busher\b|yeah!|burn\b|u got it bad/],
+    ['rihanna', /rihanna|umbrella|disturbia/],
+    ['taylorswift', /taylor swift|shake it off|love story/]
   ];
-  if(cuePatterns.some(re=>re.test(all))) return false;
+  for(const [id,re] of topics){ if(re.test(combined)) return id; }
+  return bpCorrectAnswer(q);
+}
 
-  // Avoid exact years, chart positions, counts, countries, money, and odd stats.
-  const triviaMinutia=[
-    /\bwhat year\b/, /\bwhich year\b/, /\bin what year\b/, /\breleased in what year\b/,
-    /\bhow many\b/, /\bhow much\b/, /\bwhat number\b/, /\bwhich number\b/,
-    /\bchart(ed)?\b/, /\bpeaked at\b/, /\breached #?\d/, /\b#\s?1\b/, /\bbillboard\b/,
-    /\bcountries\b/, /\bweeks at\b/, /\bweeks on\b/, /\bcost\b/, /\bbudget\b/, /\bsales\b/,
-    /\bmillion copies\b/, /\bplatinum\b/, /\bgold record\b/
-  ];
-  if(triviaMinutia.some(re=>re.test(all))) return false;
+function bpSubjectSig(q){
+  if(!q) return '';
+  const title=bpQuotedTitle(q);
+  const ans=bpCorrectAnswer(q);
+  const topic=bpTopicArtist(q);
+  const decade=bpCompact(q._did||q.decade||q._sourceDid||'');
 
-  // Avoid recording-process / behind-the-scenes facts most players would never know.
-  const behindScenes=[
-    /\bsession\b/, /\bsessions\b/, /\bone take\b/, /\btwo takes\b/, /\bproducer\b/, /\bproduced by\b/,
-    /\brecorded in\b/, /\brecording took\b/, /\btime frame\b/, /\bfinished it in\b/,
-    /\bwrote it in\b/, /\bwritten at\b/, /\bafter a night of\b/, /\bsample clearance\b/,
-    /\binterpolates\b/, /\bwriting credit\b/, /\bside project\b/, /\btook credit\b/,
-    /\bstudio\b/, /\bdemo\b/, /\bouttake\b/, /\bbonus track\b/
-  ];
-  if(behindScenes.some(re=>re.test(all))) return false;
+  if(title && topic) return 'song:'+decade+':'+title+':'+topic;
+  if(title && ans) return 'song:'+decade+':'+title+':'+ans;
+  if(title) return 'song:'+decade+':'+title;
 
-  // Remove questions whose answers are just numbers or dates; these feel like guessing.
-  const numericAnswers=answers.filter(a=>/^\s*(a\.|b\.|c\.|d\.)?\s*[#]?\d+\s*([a-z]+)?\s*$/.test(a)).length;
-  if(numericAnswers>=2) return false;
+  const stem=bpNorm(q.q||'')
+    .replace(/\b(which|what|who|whose|artist|band|group|song|hit|released|performed|sang|most|closely|associated|with|mainstream|radio|classic|famous|question|answer|is|was|by|the|a|an|and|or)\b/g,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .split(' ')
+    .filter(w=>w.length>2)
+    .slice(0,7)
+    .join('');
+  return 'topic:'+decade+':'+topic+':'+bpCompact(stem);
+}
 
-  // Keep prompts simple and mainstream; very long prompts are usually lore/trivia-heavy.
-  if(String(q.q).length>125) return false;
-
-  return true;
+function buildQueues(){
+  seenThisGame=new Set();
+  seenSubjectsThisGame=new Set();
+  seenArtistsThisGame=[];
+  lastQText='';
+  bpRecentSubjects=bpLoadList(BP_RECENT_Q_KEY).slice(-BP_RECENT_Q_LIMIT);
+  bpRecentArtists=bpLoadList(BP_RECENT_A_KEY).slice(-BP_RECENT_A_LIMIT);
+  gameQueue=_buildPool();
 }
 
 function _buildPool(){
   const decadeIds = selectedDecades.has('all')
     ? Object.keys(TRIVIA[difficulty]||{})
     : [...selectedDecades];
+
   let pool=[];
   decadeIds.forEach(did=>{
     const qs=(TRIVIA[difficulty]||{})[did]||[];
     const filtered = (selectedGenres.has('all')
       ? qs
       : qs.filter(q=>selectedGenres.has(q.genre))).filter(isPartySafeQuestion);
-    // Tag each question with its decade so showQ can badge it
-    filtered.forEach(q=>pool.push({...q,_sourceDid:did,_did:getActualDecadeId(q,did)}));
+
+    filtered.forEach(q=>{
+      const copy={...q,_sourceDid:did,_did:getActualDecadeId(q,did)};
+      copy._sig=bpSubjectSig(copy);
+      copy._artistSig=bpTopicArtist(copy);
+      pool.push(copy);
+    });
   });
+
   if(pool.length===0) return [];
-  return shuffleArray(pool);
+
+  const bySig=new Map();
+  shuffleArray(pool).forEach(q=>{
+    if(!bySig.has(q._sig)) bySig.set(q._sig,q);
+  });
+
+  return shuffleArray([...bySig.values()]);
 }
 
 function _refillQueue(){
-  // All questions seen — reset and reshuffle, keeping last seen out front
   seenThisGame=new Set();
-  const fresh=shuffleArray(_buildPool());
-  // Move the last asked question to the end to avoid immediate repeat
+  seenSubjectsThisGame=new Set();
+  seenArtistsThisGame=[];
+  gameQueue=shuffleArray(_buildPool());
   if(lastQText){
-    const li=fresh.findIndex(q=>q.q===lastQText);
-    if(li>0) fresh.push(fresh.splice(li,1)[0]);
+    const li=gameQueue.findIndex(q=>q.q===lastQText);
+    if(li>=0) gameQueue.push(gameQueue.splice(li,1)[0]);
   }
-  gameQueue=fresh;
+}
+
+function bpQuestionPenalty(q){
+  if(!q) return 999999;
+  let score=0;
+
+  if(seenThisGame.has(q.q)) score+=100000;
+  if(seenSubjectsThisGame.has(q._sig)) score+=60000;
+  if(bpRecentSubjects.includes(q._sig)) score+=2500;
+
+  const artist=q._artistSig||bpTopicArtist(q);
+  const cooldownIndex=seenArtistsThisGame.lastIndexOf(artist);
+  if(cooldownIndex>=0){
+    const distance=seenArtistsThisGame.length-1-cooldownIndex;
+    if(distance<BP_ARTIST_COOLDOWN) score+=12000-(distance*1000);
+  }
+  if(bpRecentArtists.includes(artist)) score+=450;
+  if(q.q===lastQText) score+=50000;
+
+  return score + Math.random();
+}
+
+function bpPickQuestion(candidates){
+  if(!candidates||!candidates.length) return null;
+  const sorted=[...candidates].sort((a,b)=>bpQuestionPenalty(a)-bpQuestionPenalty(b));
+  const q=sorted[0];
+  if(!q) return null;
+
+  seenThisGame.add(q.q);
+  seenSubjectsThisGame.add(q._sig);
+  lastQText=q.q;
+
+  const artist=q._artistSig||bpTopicArtist(q);
+  seenArtistsThisGame.push(artist);
+  if(seenArtistsThisGame.length>BP_ARTIST_COOLDOWN) seenArtistsThisGame=seenArtistsThisGame.slice(-BP_ARTIST_COOLDOWN);
+
+  bpRecentSubjects=bpRemember(bpRecentSubjects,BP_RECENT_Q_KEY,q._sig,BP_RECENT_Q_LIMIT);
+  bpRecentArtists=bpRemember(bpRecentArtists,BP_RECENT_A_KEY,artist,BP_RECENT_A_LIMIT);
+
+  for(let i=gameQueue.length-1;i>=0;i--){
+    const g=gameQueue[i];
+    if(!g._sig) g._sig=bpSubjectSig(g);
+    if(g._sig===q._sig || g.q===q.q) gameQueue.splice(i,1);
+  }
+
+  return q;
 }
 
 function getQ(did){
-  // Remove questions already seen this game
   let avail=gameQueue.filter(q=>!seenThisGame.has(q.q));
-  // Further filter by decade if specific decade requested
   let decadeAvail=avail.filter(q=>q._did===did);
-  // Fall back to any unseen if this decade is exhausted
   if(decadeAvail.length===0) decadeAvail=avail;
-  // If truly exhausted, refill
   if(decadeAvail.length===0){ _refillQueue(); return getQ(did); }
-  // Pick first from the shuffled queue order (maintains shuffle)
-  const q=decadeAvail[0];
-  seenThisGame.add(q.q);
-  lastQText=q.q;
-  // Remove from main queue
-  const idx=gameQueue.findIndex(g=>g.q===q.q);
-  if(idx>=0) gameQueue.splice(idx,1);
-  return q;
+  return bpPickQuestion(decadeAvail);
 }
+
+function getFilteredQ(decadeId){
+  let avail=gameQueue.filter(q=>!seenThisGame.has(q.q) && questionMatchesActiveFilters(q));
+  if(avail.length===0){
+    _refillQueue();
+    avail=gameQueue.filter(q=>!seenThisGame.has(q.q) && questionMatchesActiveFilters(q));
+  }
+  return bpPickQuestion(avail);
+}
+
+window.BP_CLEAR_QUESTION_HISTORY=function(){
+  bpRecentSubjects=[];
+  bpRecentArtists=[];
+  bpSaveList(BP_RECENT_Q_KEY,bpRecentSubjects,BP_RECENT_Q_LIMIT);
+  bpSaveList(BP_RECENT_A_KEY,bpRecentArtists,BP_RECENT_A_LIMIT);
+  return 'Question and artist history cleared.';
+};
+
+window.BP_ROTATION_STATUS=function(){
+  return {
+    queueRemaining:gameQueue.length,
+    seenExact:seenThisGame.size,
+    seenSubjects:seenSubjectsThisGame.size,
+    artistCooldown:[...seenArtistsThisGame],
+    recentSubjects:bpRecentSubjects.length,
+    recentArtists:bpRecentArtists.length
+  };
+};
+
 
 function getActualDecadeId(q, fallbackId){
   // Some generated/song-recognition questions can live in the wrong board bucket.
@@ -20408,361 +20563,6 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 <!-- v72 hard rollback to confirmed working v65 -->
 
-<!-- v75: stronger question rotation + safer Mosh Pit logic.
-     Built on working v74. Does not touch answer-click logic. -->
-<script id="bp-v75-rotation-mosh-fix">
-(function(){
-  if(window.__bpV75RotationMosh) return;
-  window.__bpV75RotationMosh = true;
-
-  const RECENT_KEY = "BP_recent_questions_v75";
-  const ARTIST_KEY = "BP_recent_artists_v75";
-  const RECENT_LIMIT = 450;
-  const ARTIST_LIMIT = 90;
-
-  function clean(s){
-    return String(s || "")
-      .toLowerCase()
-      .replace(/[’‘]/g,"'")
-      .replace(/&/g,"and")
-      .replace(/[^a-z0-9'\s]+/g," ")
-      .replace(/\s+/g," ")
-      .trim();
-  }
-
-  function compact(s){
-    return clean(s).replace(/[^a-z0-9]+/g,"");
-  }
-
-  function loadList(key){
-    try{
-      const arr = JSON.parse(localStorage.getItem(key) || "[]");
-      return Array.isArray(arr) ? arr.filter(Boolean) : [];
-    }catch(e){ return []; }
-  }
-
-  function saveList(key, arr, limit){
-    try{ localStorage.setItem(key, JSON.stringify(arr.slice(-limit))); }catch(e){}
-  }
-
-  let recentQuestions = loadList(RECENT_KEY).slice(-RECENT_LIMIT);
-  let recentArtists = loadList(ARTIST_KEY).slice(-ARTIST_LIMIT);
-  let sessionSubjects = new Set();
-  let sessionArtists = new Set();
-
-  function remember(list, key, val, limit){
-    if(!val) return list;
-    list = list.filter(x => x !== val);
-    list.push(val);
-    saveList(key, list, limit);
-    return list;
-  }
-
-  function titleFromQ(q){
-    const text = String(q && q.q || "");
-    const m = text.match(/['"“”‘’]([^'"“”‘’]{2,90})['"“”‘’]/);
-    return m && m[1] ? compact(m[1]) : "";
-  }
-
-  function answerFromQ(q){
-    try{
-      return compact(q.a[q.c] || "");
-    }catch(e){ return ""; }
-  }
-
-  function subjectSig(q){
-    if(!q) return "";
-    const title = titleFromQ(q);
-    const ans = answerFromQ(q);
-    const decade = compact(q._did || q.decade || q._sourceDid || "");
-    if(title && ans) return "song:" + decade + ":" + title + ":" + ans;
-    if(title) return "song:" + decade + ":" + title;
-
-    const stem = clean(q.q || "")
-      .replace(/\b(which|what|who|whose|artist|band|group|song|hit|released|performed|sang|most|closely|associated|with|mainstream|radio|classic|famous|question|answer|is|was|by|the|a|an)\b/g," ")
-      .replace(/\s+/g," ")
-      .trim()
-      .split(" ")
-      .filter(w => w.length > 2)
-      .slice(0,8)
-      .join("");
-    return "stem:" + decade + ":" + ans + ":" + compact(stem);
-  }
-
-  function artistSig(q){
-    return answerFromQ(q);
-  }
-
-  function shuffle(arr){
-    const a = [...arr];
-    for(let i=a.length-1;i>0;i--){
-      let r = Math.random();
-      try{
-        if(window.crypto && crypto.getRandomValues){
-          const b = new Uint32Array(1);
-          crypto.getRandomValues(b);
-          r = b[0] / 4294967296;
-        }
-      }catch(e){}
-      const j = Math.floor(r * (i+1));
-      [a[i],a[j]] = [a[j],a[i]];
-    }
-    return a;
-  }
-
-  function getDecades(){
-    try{
-      if(selectedDecades && selectedDecades.has && selectedDecades.has("all")){
-        return Object.keys(TRIVIA[difficulty] || {});
-      }
-      return [...selectedDecades];
-    }catch(e){
-      return Object.keys((TRIVIA && TRIVIA[difficulty]) || {});
-    }
-  }
-
-  function buildPoolV75(){
-    const decades = getDecades();
-    let pool = [];
-
-    decades.forEach(did => {
-      const qs = ((TRIVIA[difficulty] || {})[did] || []);
-      const filtered = (selectedGenres && selectedGenres.has && !selectedGenres.has("all"))
-        ? qs.filter(q => selectedGenres.has(q.genre))
-        : qs;
-
-      filtered.forEach(q => {
-        if(typeof isPartySafeQuestion === "function" && !isPartySafeQuestion(q)) return;
-        const actualDid = typeof getActualDecadeId === "function" ? getActualDecadeId(q, did) : did;
-        const copy = {...q, _sourceDid:did, _did:actualDid};
-        copy._sig = subjectSig(copy);
-        copy._artistSig = artistSig(copy);
-        pool.push(copy);
-      });
-    });
-
-    // Collapse exact same subject/answer variations before game begins.
-    const map = new Map();
-    shuffle(pool).forEach(q => {
-      if(!map.has(q._sig)) map.set(q._sig, q);
-    });
-
-    return shuffle([...map.values()]);
-  }
-
-  function chooseQuestion(candidates){
-    if(!candidates || !candidates.length) return null;
-
-    function rank(q){
-      let score = 0;
-      if(seenThisGame && seenThisGame.has && seenThisGame.has(q.q)) score += 10000;
-      if(sessionSubjects.has(q._sig)) score += 5000;
-      if(recentQuestions.includes(q._sig)) score += 1200;
-      if(sessionArtists.has(q._artistSig)) score += 700;
-      if(recentArtists.includes(q._artistSig)) score += 250;
-      return score + Math.random();
-    }
-
-    const sorted = [...candidates].sort((a,b)=>rank(a)-rank(b));
-    const q = sorted[0];
-    if(!q) return null;
-
-    try{ seenThisGame.add(q.q); }catch(e){}
-    sessionSubjects.add(q._sig);
-    sessionArtists.add(q._artistSig);
-    recentQuestions = remember(recentQuestions, RECENT_KEY, q._sig, RECENT_LIMIT);
-    recentArtists = remember(recentArtists, ARTIST_KEY, q._artistSig, ARTIST_LIMIT);
-    try{ lastQText = q.q; }catch(e){}
-
-    // Remove all same-subject variants from the current queue immediately.
-    try{
-      for(let i=gameQueue.length-1;i>=0;i--){
-        const g = gameQueue[i];
-        if(!g._sig) g._sig = subjectSig(g);
-        if(g._sig === q._sig || g.q === q.q) gameQueue.splice(i,1);
-      }
-    }catch(e){}
-
-    return q;
-  }
-
-  try{
-    _buildPool = buildPoolV75;
-
-    buildQueues = function(){
-      try{ seenThisGame = new Set(); }catch(e){}
-      sessionSubjects = new Set();
-      sessionArtists = new Set();
-      recentQuestions = loadList(RECENT_KEY).slice(-RECENT_LIMIT);
-      recentArtists = loadList(ARTIST_KEY).slice(-ARTIST_LIMIT);
-      gameQueue = _buildPool();
-      try{ addLog("🔀 Strong question rotation active."); }catch(e){}
-    };
-
-    _refillQueue = function(){
-      try{ seenThisGame = new Set(); }catch(e){}
-      sessionSubjects = new Set();
-      gameQueue = _buildPool();
-    };
-
-    getQ = function(did){
-      let avail = (gameQueue || []).filter(q => {
-        try{ return !seenThisGame.has(q.q); }catch(e){ return true; }
-      });
-      let decadeAvail = avail.filter(q => q._did === did);
-      if(!decadeAvail.length) decadeAvail = avail;
-      if(!decadeAvail.length){
-        _refillQueue();
-        avail = (gameQueue || []).filter(q => {
-          try{ return !seenThisGame.has(q.q); }catch(e){ return true; }
-        });
-        decadeAvail = avail.filter(q => q._did === did);
-        if(!decadeAvail.length) decadeAvail = avail;
-      }
-      return chooseQuestion(decadeAvail);
-    };
-
-    getFilteredQ = function(decadeId){
-      let avail = (gameQueue || []).filter(q => {
-        const unseen = (()=>{ try{return !seenThisGame.has(q.q);}catch(e){return true;} })();
-        const matches = typeof questionMatchesActiveFilters === "function" ? questionMatchesActiveFilters(q) : true;
-        return unseen && matches;
-      });
-      if(!avail.length){
-        _refillQueue();
-        avail = (gameQueue || []).filter(q => {
-          const unseen = (()=>{ try{return !seenThisGame.has(q.q);}catch(e){return true;} })();
-          const matches = typeof questionMatchesActiveFilters === "function" ? questionMatchesActiveFilters(q) : true;
-          return unseen && matches;
-        });
-      }
-      return chooseQuestion(avail);
-    };
-  }catch(e){
-    console.warn("v75 question rotation patch could not install", e);
-  }
-
-  // Mosh Pit fix: never let the leader swap backward; only offer nearby/ahead targets.
-  function playerPosition(p){
-    return Number((p && (p.pos ?? p.position ?? p.loc)) || 0);
-  }
-
-  function isLeader(player){
-    const pos = playerPosition(player);
-    try{
-      return players.every(other => other === player || playerPosition(other) <= pos);
-    }catch(e){ return false; }
-  }
-
-  function eligibleMoshTargets(player){
-    const pos = playerPosition(player);
-    try{
-      return players.filter(p => {
-        if(!p || p === player || p.finished) return false;
-        const targetPos = playerPosition(p);
-        const dist = Math.abs(targetPos - pos);
-        // Only players ahead or close by. Never swap backward.
-        return targetPos > pos && dist <= 12;
-      });
-    }catch(e){ return []; }
-  }
-
-  try{
-    if(typeof window.applySpecial === "function" && !window.applySpecial.__bpV75Mosh){
-      const oldApplySpecial = window.applySpecial;
-      window.applySpecial = function(space, player){
-        try{
-          const type = String((space && (space.type || space.name || space.id)) || "").toLowerCase();
-          const label = String((space && (space.label || space.title || space.desc)) || "").toLowerCase();
-          const isMosh = type.includes("mosh") || label.includes("mosh");
-          if(isMosh){
-            if(isLeader(player)){
-              try{ addLog("🤘 Mosh Pit: already leading — no backward swap."); }catch(e){}
-              return;
-            }
-            const targets = eligibleMoshTargets(player);
-            if(!targets.length){
-              try{ addLog("🤘 Mosh Pit: no nearby player ahead to swap with."); }catch(e){}
-              return;
-            }
-            // Store allowed targets so existing swap UI, if used by downstream code,
-            // can be filtered by the patched showSwapOptions below.
-            window.__bpV75AllowedMoshTargets = targets;
-          }
-        }catch(e){}
-        return oldApplySpecial.apply(this, arguments);
-      };
-      window.applySpecial.__bpV75Mosh = true;
-      try{ applySpecial = window.applySpecial; }catch(e){}
-    }
-  }catch(e){}
-
-  try{
-    if(typeof window.showSwapOptions === "function" && !window.showSwapOptions.__bpV75Mosh){
-      const oldShowSwapOptions = window.showSwapOptions;
-      window.showSwapOptions = function(player){
-        try{
-          if(isLeader(player)){
-            try{ addLog("🤘 Mosh Pit skipped: leader keeps the spotlight."); }catch(e){}
-            return;
-          }
-          const targets = eligibleMoshTargets(player);
-          if(!targets.length){
-            try{ addLog("🤘 Mosh Pit: no nearby player ahead to swap with."); }catch(e){}
-            return;
-          }
-          window.__bpV75AllowedMoshTargets = targets;
-        }catch(e){}
-        return oldShowSwapOptions.apply(this, arguments);
-      };
-      window.showSwapOptions.__bpV75Mosh = true;
-      try{ showSwapOptions = window.showSwapOptions; }catch(e){}
-    }
-  }catch(e){}
-
-  // Filter dynamically created swap option buttons, in case the original UI builds all players.
-  const filterSwapOptions = function(){
-    try{
-      const allowed = window.__bpV75AllowedMoshTargets;
-      if(!allowed || !allowed.length) return;
-      const names = new Set(allowed.map(p => String(p.name || "")));
-      document.querySelectorAll(".swap-opt").forEach(btn => {
-        const txt = btn.textContent || "";
-        let ok = false;
-        names.forEach(n => { if(n && txt.includes(n)) ok = true; });
-        if(!ok) btn.style.display = "none";
-      });
-    }catch(e){}
-  };
-
-  try{
-    new MutationObserver(filterSwapOptions).observe(document.body, {childList:true, subtree:true});
-  }catch(e){}
-
-  window.BP_CLEAR_QUESTION_HISTORY = function(){
-    recentQuestions = [];
-    recentArtists = [];
-    saveList(RECENT_KEY, recentQuestions, RECENT_LIMIT);
-    saveList(ARTIST_KEY, recentArtists, ARTIST_LIMIT);
-    try{ addLog("🧹 Question and artist history cleared."); }catch(e){}
-    return "Question and artist history cleared.";
-  };
-
-  window.BP_ROTATION_STATUS = function(){
-    return {
-      recentQuestions: recentQuestions.length,
-      recentArtists: recentArtists.length,
-      sessionSubjects: sessionSubjects.size,
-      sessionArtists: sessionArtists.size,
-      queueRemaining: (gameQueue || []).length
-    };
-  };
-
-  console.log("v75 rotation + mosh fix active");
-})();
-</script>
-
-
 <!-- v76: lightweight game-show polish. Built on v75; answer-click logic untouched. -->
 <style id="bp-v76-game-show-polish-css">
   /* Subtle game-show spotlight feel for question screen */
@@ -21007,6 +20807,71 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   setTimeout(watchQuestionText, 1000);
 
   console.log("v76 lightweight game-show polish active");
+})();
+</script>
+
+
+<!-- v77 Mosh Pit safety: leader never swaps backward; targets ahead/nearby only -->
+<script id="bp-v77-mosh-only">
+(function(){
+  if(window.__bpV77MoshOnly) return;
+  window.__bpV77MoshOnly=true;
+
+  function playerPosition(p){
+    return Number((p && (p.pos ?? p.position ?? p.loc)) || 0);
+  }
+  function isLeader(player){
+    const pos=playerPosition(player);
+    try{return players.every(other=>other===player || playerPosition(other)<=pos);}
+    catch(e){return false;}
+  }
+  function eligibleTargets(player){
+    const pos=playerPosition(player);
+    try{
+      return players.filter(p=>{
+        if(!p || p===player || p.finished) return false;
+        const targetPos=playerPosition(p);
+        const dist=Math.abs(targetPos-pos);
+        return targetPos>pos && dist<=12;
+      });
+    }catch(e){return [];}
+  }
+
+  try{
+    if(typeof window.showSwapOptions==='function' && !window.showSwapOptions.__bpV77){
+      const old=window.showSwapOptions;
+      window.showSwapOptions=function(player){
+        if(isLeader(player)){
+          try{addLog('🤘 Mosh Pit skipped: leader keeps the spotlight.');}catch(e){}
+          return;
+        }
+        const targets=eligibleTargets(player);
+        if(!targets.length){
+          try{addLog('🤘 Mosh Pit: no nearby player ahead to swap with.');}catch(e){}
+          return;
+        }
+        window.__bpV77MoshTargets=targets;
+        return old.apply(this,arguments);
+      };
+      window.showSwapOptions.__bpV77=true;
+      try{showSwapOptions=window.showSwapOptions;}catch(e){}
+    }
+  }catch(e){}
+
+  function filterSwapButtons(){
+    try{
+      const targets=window.__bpV77MoshTargets;
+      if(!targets||!targets.length) return;
+      const names=new Set(targets.map(p=>String(p.name||'')));
+      document.querySelectorAll('.swap-opt').forEach(btn=>{
+        const txt=btn.textContent||'';
+        let ok=false;
+        names.forEach(n=>{if(n&&txt.includes(n)) ok=true;});
+        if(!ok) btn.style.display='none';
+      });
+    }catch(e){}
+  }
+  try{new MutationObserver(filterSwapButtons).observe(document.body,{childList:true,subtree:true});}catch(e){}
 })();
 </script>
 
