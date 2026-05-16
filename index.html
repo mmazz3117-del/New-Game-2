@@ -20640,150 +20640,7 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   .header-title{font-size:1.08rem!important;}
 }
 </style>
-<script id="bp-v39-question-rotation">
-(function(){
-  const RECENT_KEY='bp_recent_questions_v39';
-  const RECENT_LIMIT=260;
-
-  function cryptoRand(){
-    try{
-      const a=new Uint32Array(1);
-      crypto.getRandomValues(a);
-      return a[0]/4294967296;
-    }catch(e){ return Math.random(); }
-  }
-  function strongShuffle(arr){
-    const a=[...arr];
-    for(let i=a.length-1;i>0;i--){
-      const j=Math.floor(cryptoRand()*(i+1));
-      [a[i],a[j]]=[a[j],a[i]];
-    }
-    return a;
-  }
-  function qKey(q){
-    return String(q && q.q || '').toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9]+/g,' ').trim();
-  }
-  function getRecent(){
-    try{return JSON.parse(localStorage.getItem(RECENT_KEY)||'[]').filter(Boolean);}catch(e){return [];}
-  }
-  function saveRecent(q){
-    const k=qKey(q); if(!k) return;
-    const list=getRecent().filter(x=>x!==k);
-    list.unshift(k);
-    try{localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0,RECENT_LIMIT)));}catch(e){}
-  }
-  function deDupeByPrompt(pool){
-    const seen=new Set();
-    const out=[];
-    for(const q of pool||[]){
-      const k=qKey(q);
-      if(!k || seen.has(k)) continue;
-      seen.add(k); out.push(q);
-    }
-    return out;
-  }
-  function randomTake(avail){
-    if(!avail || !avail.length) return null;
-    // Pick randomly from the first 40% after shuffle. This keeps variety without feeling chaotic.
-    const lim=Math.max(1, Math.ceil(avail.length*0.40));
-    return avail[Math.floor(cryptoRand()*lim)];
-  }
-
-  const oldBuildPool=window._buildPool || (typeof _buildPool==='function' ? _buildPool : null);
-  if(oldBuildPool){
-    window._buildPool=function(){
-      let pool=deDupeByPrompt(oldBuildPool()).filter(Boolean);
-      pool=strongShuffle(pool);
-      const recent=new Set(getRecent());
-      const fresh=pool.filter(q=>!recent.has(qKey(q)));
-      // If the selected decade/genre pool is large enough, avoid recently seen prompts across games.
-      if(fresh.length>=Math.min(75, Math.ceil(pool.length*0.45))) return strongShuffle(fresh);
-      return strongShuffle(pool);
-    };
-    try{ _buildPool=window._buildPool; }catch(e){}
-  }
-
-  if(typeof buildQueues==='function'){
-    const oldBuildQueues=buildQueues;
-    window.buildQueues=function(){
-      if(typeof seenThisGame!=='undefined') seenThisGame=new Set();
-      if(typeof lastQText!=='undefined') lastQText='';
-      if(typeof gameQueue!=='undefined') gameQueue=strongShuffle((window._buildPool?window._buildPool():oldBuildPool?oldBuildPool():[]));
-      else oldBuildQueues();
-      return gameQueue;
-    };
-    try{ buildQueues=window.buildQueues; }catch(e){}
-  }
-
-  if(typeof _refillQueue==='function'){
-    window._refillQueue=function(){
-      if(typeof seenThisGame!=='undefined') seenThisGame=new Set();
-      let fresh=strongShuffle((window._buildPool?window._buildPool():[]));
-      if(typeof lastQText!=='undefined' && lastQText){
-        const li=fresh.findIndex(q=>q.q===lastQText);
-        if(li>=0) fresh.push(fresh.splice(li,1)[0]);
-      }
-      gameQueue=fresh;
-    };
-    try{ _refillQueue=window._refillQueue; }catch(e){}
-  }
-
-  function selectAndRemove(avail){
-    avail=strongShuffle(avail||[]);
-    const q=randomTake(avail);
-    if(!q) return null;
-    if(typeof seenThisGame!=='undefined') seenThisGame.add(q.q);
-    if(typeof lastQText!=='undefined') lastQText=q.q;
-    saveRecent(q);
-    if(typeof gameQueue!=='undefined'){
-      const idx=gameQueue.findIndex(g=>g.q===q.q);
-      if(idx>=0) gameQueue.splice(idx,1);
-    }
-    return q;
-  }
-
-  if(typeof getFilteredQ==='function'){
-    window.getFilteredQ=function(decadeId){
-      let avail=(gameQueue||[]).filter(q=>!seenThisGame.has(q.q) && questionMatchesActiveFilters(q));
-      const recent=new Set(getRecent());
-      let fresh=avail.filter(q=>!recent.has(qKey(q)));
-      if(fresh.length>=Math.min(20, Math.ceil(avail.length*0.35))) avail=fresh;
-      if(!avail.length){ _refillQueue(); avail=(gameQueue||[]).filter(q=>!seenThisGame.has(q.q) && questionMatchesActiveFilters(q)); }
-      return selectAndRemove(avail);
-    };
-    try{ getFilteredQ=window.getFilteredQ; }catch(e){}
-  }
-
-  if(typeof getQ==='function'){
-    window.getQ=function(did){
-      let avail=(gameQueue||[]).filter(q=>!seenThisGame.has(q.q));
-      let decadeAvail=avail.filter(q=>q._did===did);
-      if(!decadeAvail.length) decadeAvail=avail;
-      const recent=new Set(getRecent());
-      const fresh=decadeAvail.filter(q=>!recent.has(qKey(q)));
-      if(fresh.length>=Math.min(20, Math.ceil(decadeAvail.length*0.35))) decadeAvail=fresh;
-      if(!decadeAvail.length){ _refillQueue(); return getQ(did); }
-      return selectAndRemove(decadeAvail);
-    };
-    try{ getQ=window.getQ; }catch(e){}
-  }
-
-  // Make New Game reshuffle without clearing the recent-question memory, so fresh games feel different.
-  if(typeof window.startNewGame==='function'){
-    const oldStartNewGame=window.startNewGame;
-    window.startNewGame=function(){
-      try{ sessionStorage.clear(); }catch(e){}
-      return oldStartNewGame();
-    };
-  }
-
-  window.BP_clearRecentQuestions=function(){try{localStorage.removeItem(RECENT_KEY);}catch(e){}};
-  console.log('V39 fresh question rotation active');
-})();
-</script>
-
-
-
+<!-- v84 removed old v39 question rotation patch so v77 strict rotation stays active -->
 <!-- V51 STABLE CORE: disable splash FX and reduce crash risk -->
 <style id="bp-v51-stable-style">
   #splashNotes,#splashNotesV40,#bpSplashIconLayerV46,.bp-splash-icon-v40,.bp-splash-icon-v46,.splash-note,.splash-piece-float{display:none!important;animation:none!important;}
@@ -23612,6 +23469,935 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 })();
 </script>
 
+
+<!-- Expansion Pack 8: Missing Artists / Modern Gap Pack -->
+<script id="bp-expansion-pack-8-missing-artists">
+(function(){
+  const pack = [
+  {
+    "diff": "easy",
+    "decade": "60s",
+    "genre": "Funk",
+    "q": "Which artist or act is most associated with the 1960s hit 'Dance to the Music'?",
+    "a": [
+      "Funkadelic",
+      "Kool & the Gang",
+      "Stevie Wonder",
+      "Sly and the Family Stone"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "60s",
+    "genre": "Funk",
+    "q": "Who released the 1960s song 'Everyday People'?",
+    "a": [
+      "Sly and the Family Stone",
+      "Kool & the Gang",
+      "Earth, Wind & Fire",
+      "Stevie Wonder"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Funk",
+    "q": "'Hot Fun in the Summertime' belongs to which 1960s artist or act?",
+    "a": [
+      "Funkadelic",
+      "James Brown",
+      "Chic",
+      "Sly and the Family Stone"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Funk",
+    "q": "Which act is best known for 'I Want to Take You Higher'?",
+    "a": [
+      "Sly and the Family Stone",
+      "Stevie Wonder",
+      "Parliament",
+      "James Brown"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Funk",
+    "q": "Which artist or act is most associated with the 1970s hit 'Family Affair'?",
+    "a": [
+      "Parliament",
+      "Sly and the Family Stone",
+      "Kool & the Gang",
+      "James Brown"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Funk",
+    "q": "Who released the 1970s song 'If You Want Me to Stay'?",
+    "a": [
+      "Earth, Wind & Fire",
+      "Sly and the Family Stone",
+      "Chic",
+      "Kool & the Gang"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'The Boys Are Back in Town' belongs to which 1970s artist or act?",
+    "a": [
+      "Tame Impala",
+      "Hozier",
+      "Sly and the Family Stone",
+      "Thin Lizzy"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which act is best known for 'Jailbreak'?",
+    "a": [
+      "The Lumineers",
+      "Sly and the Family Stone",
+      "Thin Lizzy",
+      "Twenty One Pilots"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which artist or act is most associated with the 1970s hit 'Whiskey in the Jar'?",
+    "a": [
+      "Dave Matthews Band",
+      "Hozier",
+      "Hootie & the Blowfish",
+      "Thin Lizzy"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the 1970s song 'Dancing in the Moonlight'?",
+    "a": [
+      "Måneskin",
+      "Thin Lizzy",
+      "Imagine Dragons",
+      "The Lumineers"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'Cowboy Song' belongs to which 1970s artist or act?",
+    "a": [
+      "Hootie & the Blowfish",
+      "The Lumineers",
+      "Thin Lizzy",
+      "Hozier"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'All Out of Love'?",
+    "a": [
+      "Taylor Swift",
+      "Air Supply",
+      "Kacey Musgraves",
+      "Mitski"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 1980s hit 'Lost in Love'?",
+    "a": [
+      "Air Supply",
+      "Sabrina Carpenter",
+      "Rosalía",
+      "Taylor Swift"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Who released the 1980s song 'Making Love Out of Nothing at All'?",
+    "a": [
+      "Lana Del Rey",
+      "Beyoncé",
+      "Taylor Swift",
+      "Air Supply"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "'Even the Nights Are Better' belongs to which 1980s artist or act?",
+    "a": [
+      "BLACKPINK",
+      "Air Supply",
+      "Noah Kahan",
+      "Billie Eilish"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'The One That You Love'?",
+    "a": [
+      "Air Supply",
+      "Rosalía",
+      "Zach Bryan",
+      "Sabrina Carpenter"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which artist or act is most associated with the 1990s hit 'Hold My Hand'?",
+    "a": [
+      "Hootie & the Blowfish",
+      "Sly and the Family Stone",
+      "Coldplay",
+      "Imagine Dragons"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Who released the 1990s song 'Let Her Cry'?",
+    "a": [
+      "Hootie & the Blowfish",
+      "Thin Lizzy",
+      "Imagine Dragons",
+      "Tame Impala"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "'Only Wanna Be with You' belongs to which 1990s artist or act?",
+    "a": [
+      "The Lumineers",
+      "Hozier",
+      "Hootie & the Blowfish",
+      "Dave Matthews Band"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which act is best known for 'Tucker's Town'?",
+    "a": [
+      "Sly and the Family Stone",
+      "Dave Matthews Band",
+      "Måneskin",
+      "Hootie & the Blowfish"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which artist or act is most associated with the 1990s hit 'Crash Into Me'?",
+    "a": [
+      "Dave Matthews Band",
+      "Hootie & the Blowfish",
+      "Hozier",
+      "Thin Lizzy"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Who released the 1990s song 'Ants Marching'?",
+    "a": [
+      "Tame Impala",
+      "Dave Matthews Band",
+      "Twenty One Pilots",
+      "Thin Lizzy"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "'The Space Between' belongs to which 2000s artist or act?",
+    "a": [
+      "Måneskin",
+      "Imagine Dragons",
+      "Sly and the Family Stone",
+      "Dave Matthews Band"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which act is best known for 'Where Are You Going'?",
+    "a": [
+      "Coldplay",
+      "Dave Matthews Band",
+      "Hozier",
+      "Hootie & the Blowfish"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which artist or act is most associated with the 2000s hit 'American Baby'?",
+    "a": [
+      "Hootie & the Blowfish",
+      "The Lumineers",
+      "Dave Matthews Band",
+      "Thin Lizzy"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2010s song 'Video Games'?",
+    "a": [
+      "Noah Kahan",
+      "Kacey Musgraves",
+      "Sabrina Carpenter",
+      "Lana Del Rey"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Summertime Sadness' belongs to which 2010s artist or act?",
+    "a": [
+      "Sabrina Carpenter",
+      "Halsey",
+      "Lana Del Rey",
+      "Zach Bryan"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'Born to Die'?",
+    "a": [
+      "Dua Lipa",
+      "Rihanna",
+      "Sabrina Carpenter",
+      "Lana Del Rey"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Soundtrack",
+    "q": "Which artist or act is most associated with the 2010s hit 'Young and Beautiful'?",
+    "a": [
+      "Dua Lipa",
+      "Post Malone and Swae Lee",
+      "Lana Del Rey",
+      "Metro Boomin, Swae Lee, NAV, and A Boogie wit da Hoodie"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2010s song 'Bad at Love'?",
+    "a": [
+      "Taylor Swift",
+      "Noah Kahan",
+      "Halsey",
+      "Kacey Musgraves"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'New Americana' belongs to which 2010s artist or act?",
+    "a": [
+      "Harry Styles",
+      "The Weeknd",
+      "Chris Stapleton",
+      "Halsey"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'You Should Be Sad'?",
+    "a": [
+      "Kacey Musgraves",
+      "Halsey",
+      "Taylor Swift",
+      "BLACKPINK"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2010s hit 'Follow Your Arrow'?",
+    "a": [
+      "Kacey Musgraves",
+      "Noah Kahan",
+      "Taylor Swift",
+      "Halsey"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2010s song 'Merry Go 'Round'?",
+    "a": [
+      "Kacey Musgraves",
+      "Zach Bryan",
+      "The Kid LAROI",
+      "BLACKPINK"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Slow Burn' belongs to which 2010s artist or act?",
+    "a": [
+      "Zach Bryan",
+      "Kacey Musgraves",
+      "The Weeknd",
+      "Rosalía"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'Tennessee Whiskey'?",
+    "a": [
+      "Zach Bryan",
+      "Rihanna",
+      "BLACKPINK",
+      "Chris Stapleton"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2010s hit 'Traveller'?",
+    "a": [
+      "Bad Bunny",
+      "Chris Stapleton",
+      "Lana Del Rey",
+      "Noah Kahan"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2010s song 'Broken Halos'?",
+    "a": [
+      "Beyoncé",
+      "Chris Stapleton",
+      "Zach Bryan",
+      "Bad Bunny"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Starting Over' belongs to which 2020s artist or act?",
+    "a": [
+      "Olivia Rodrigo",
+      "Mitski",
+      "Chris Stapleton",
+      "Kacey Musgraves"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'Something in the Orange'?",
+    "a": [
+      "Dua Lipa",
+      "Zach Bryan",
+      "The Kid LAROI",
+      "Bad Bunny"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2020s hit 'I Remember Everything'?",
+    "a": [
+      "Sabrina Carpenter",
+      "Zach Bryan and Kacey Musgraves",
+      "Kacey Musgraves",
+      "Rihanna"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2020s song 'Heading South'?",
+    "a": [
+      "The Kid LAROI",
+      "Zach Bryan",
+      "Beyoncé",
+      "Rihanna"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Pink Skies' belongs to which 2020s artist or act?",
+    "a": [
+      "Zach Bryan",
+      "The Kid LAROI",
+      "Lana Del Rey",
+      "Noah Kahan"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'Tití Me Preguntó'?",
+    "a": [
+      "Bad Bunny",
+      "Sabrina Carpenter",
+      "Chris Stapleton",
+      "Rosalía"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2020s hit 'Moscow Mule'?",
+    "a": [
+      "Bad Bunny",
+      "BLACKPINK",
+      "Lana Del Rey",
+      "Mitski"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2020s song 'Me Porto Bonito'?",
+    "a": [
+      "Bad Bunny",
+      "Beyoncé",
+      "Rihanna",
+      "Billie Eilish"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Dakiti' belongs to which 2020s artist or act?",
+    "a": [
+      "Taylor Swift",
+      "Rosalía",
+      "Zach Bryan",
+      "Bad Bunny and Jhay Cortez"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'Yonaguni'?",
+    "a": [
+      "Bad Bunny",
+      "Lana Del Rey",
+      "Sabrina Carpenter",
+      "Beyoncé"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2010s hit 'Malamente'?",
+    "a": [
+      "Rosalía",
+      "Dua Lipa",
+      "Olivia Rodrigo",
+      "Harry Styles"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2010s song 'Con Altura'?",
+    "a": [
+      "Harry Styles",
+      "Rosalía and J Balvin",
+      "Kacey Musgraves",
+      "Halsey"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Despechá' belongs to which 2020s artist or act?",
+    "a": [
+      "Zach Bryan",
+      "Olivia Rodrigo",
+      "Beyoncé",
+      "Rosalía"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'La Fama'?",
+    "a": [
+      "Zach Bryan",
+      "Bad Bunny",
+      "Rihanna",
+      "Rosalía and The Weeknd"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2010s hit 'DDU-DU DDU-DU'?",
+    "a": [
+      "Beyoncé",
+      "BLACKPINK",
+      "Noah Kahan",
+      "Olivia Rodrigo"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2010s song 'Kill This Love'?",
+    "a": [
+      "BLACKPINK",
+      "Chris Stapleton",
+      "Kacey Musgraves",
+      "Taylor Swift"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'How You Like That' belongs to which 2020s artist or act?",
+    "a": [
+      "Rosalía",
+      "Chris Stapleton",
+      "BLACKPINK",
+      "Olivia Rodrigo"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for 'Pink Venom'?",
+    "a": [
+      "Rihanna",
+      "Noah Kahan",
+      "BLACKPINK",
+      "The Kid LAROI"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2020s hit 'Shut Down'?",
+    "a": [
+      "Beyoncé",
+      "Billie Eilish",
+      "Olivia Rodrigo",
+      "BLACKPINK"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Who released the 2010s song 'EARFQUAKE'?",
+    "a": [
+      "21 Savage",
+      "Post Malone",
+      "Metro Boomin",
+      "Tyler, the Creator"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "'See You Again' belongs to which 2010s artist or act?",
+    "a": [
+      "21 Savage",
+      "Bad Bunny",
+      "Tyler, the Creator",
+      "Kendrick Lamar"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Which act is best known for 'Yonkers'?",
+    "a": [
+      "Tyler, the Creator",
+      "Post Malone",
+      "Doja Cat",
+      "Kendrick Lamar"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Which artist or act is most associated with the 2020s hit 'WUSYANAME'?",
+    "a": [
+      "Post Malone",
+      "Tyler, the Creator",
+      "Future",
+      "Drake"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Who released the 2020s song 'Sweet / I Thought You Wanted to Dance'?",
+    "a": [
+      "Nicki Minaj",
+      "Doja Cat",
+      "Bad Bunny",
+      "Tyler, the Creator"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "'Creepin'' belongs to which 2020s artist or act?",
+    "a": [
+      "Kendrick Lamar",
+      "Tyler, the Creator",
+      "Metro Boomin, The Weeknd, and 21 Savage",
+      "21 Savage"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Which act is best known for 'Superhero'?",
+    "a": [
+      "Metro Boomin, Future, and Chris Brown",
+      "Lil Nas X",
+      "Drake",
+      "Travis Scott"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist or act is most associated with the 2010s hit 'Washing Machine Heart'?",
+    "a": [
+      "Zach Bryan",
+      "Beyoncé",
+      "Rihanna",
+      "Mitski"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the 2020s song 'My Love Mine All Mine'?",
+    "a": [
+      "Billie Eilish",
+      "Rihanna",
+      "Mitski",
+      "Olivia Rodrigo"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'The Only Heartbreaker' belongs to which 2020s artist or act?",
+    "a": [
+      "Olivia Rodrigo",
+      "BLACKPINK",
+      "Kacey Musgraves",
+      "Mitski"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which act is best known for 'The Less I Know the Better'?",
+    "a": [
+      "Sly and the Family Stone",
+      "Thin Lizzy",
+      "Dave Matthews Band",
+      "Tame Impala"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which artist or act is most associated with the 2010s hit 'Feels Like We Only Go Backwards'?",
+    "a": [
+      "Hootie & the Blowfish",
+      "Imagine Dragons",
+      "Tame Impala",
+      "The Lumineers"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Who released the 2010s song 'Let It Happen'?",
+    "a": [
+      "Tame Impala",
+      "Hozier",
+      "The Lumineers",
+      "Imagine Dragons"
+    ],
+    "c": 0
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_8 = { name: 'Missing Artists / Modern Gap Pack', added };
+  console.log('Expansion Pack 8 added', added, 'questions');
+})();
+</script>
+
 <!-- v77 Mosh Pit safety: leader never swaps backward; targets ahead/nearby only -->
 <script id="bp-v77-mosh-only">
 (function(){
@@ -23678,5 +24464,534 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 
 <!-- v80 stable rollback to v78 mobile view; removed v79 path resizing -->
+
+<!-- v84: steal consistency + rotation verification -->
+<script id="bp-v84-steal-consistency-fix">
+(function(){
+  if(window.__bpV84StealFix) return;
+  window.__bpV84StealFix = true;
+
+  function getPos(p){
+    return Number((p && (p.sectionIdx ?? p.pos ?? p.position ?? p.loc)) || 0);
+  }
+
+  function activeOtherPlayers(){
+    try{
+      return players
+        .map((p,i)=>({p,i}))
+        .filter(x => x.p && x.i !== curPlayer && !x.p.finished);
+    }catch(e){
+      return [];
+    }
+  }
+
+  // The old logic required a 3-space gap and sectionIdx > 3, so late-game or close games
+  // could silently skip the steal. This version offers a steal whenever another active
+  // player exists. Wrong-steal movement is already safely clamped elsewhere.
+  window.findBestStealer = function(){
+    const others = activeOtherPlayers();
+    if(!others.length) return null;
+
+    let currentPos = 0;
+    try{ currentPos = getPos(players[curPlayer]); }catch(e){}
+
+    // Prefer the player farthest away for drama; if tied, prefer the trailing player.
+    let best = others[0];
+    let bestScore = -Infinity;
+
+    others.forEach(x=>{
+      const pos = getPos(x.p);
+      const gap = Math.abs(pos - currentPos);
+      const trailingBonus = pos < currentPos ? 0.25 : 0;
+      const score = gap + trailingBonus + Math.random() * 0.01;
+      if(score > bestScore){
+        bestScore = score;
+        best = x;
+      }
+    });
+
+    return best.i;
+  };
+
+  try{ findBestStealer = window.findBestStealer; }catch(e){}
+
+  window.checkStealAvailable = function(){
+    return window.findBestStealer() !== null;
+  };
+
+  try{ checkStealAvailable = window.checkStealAvailable; }catch(e){}
+
+  // Make failed-steal movement safe even when a player is near the start.
+  if(typeof window.closeQ === "function" && !window.closeQ.__bpV84SafeSteal){
+    const oldCloseQ = window.closeQ;
+    window.closeQ = function(){
+      try{
+        if(Array.isArray(players)){
+          players.forEach(p=>{
+            if(p && Number(p.sectionIdx) < 0) p.sectionIdx = 0;
+            if(p && Number(p.pos) < 0) p.pos = 0;
+          });
+        }
+      }catch(e){}
+      return oldCloseQ.apply(this, arguments);
+    };
+    window.closeQ.__bpV84SafeSteal = true;
+    try{ closeQ = window.closeQ; }catch(e){}
+  }
+
+  window.BP_STEAL_STATUS = function(){
+    return {
+      available: window.checkStealAvailable ? window.checkStealAvailable() : false,
+      bestStealerIndex: window.findBestStealer ? window.findBestStealer() : null,
+      activeOtherPlayers: activeOtherPlayers().map(x=>({
+        index:x.i,
+        name:x.p && x.p.name,
+        sectionIdx:x.p && x.p.sectionIdx,
+        pos:x.p && x.p.pos
+      }))
+    };
+  };
+
+  console.log("v84 steal consistency fix active; old v39 rotation removed");
+})();
+</script>
+
+
+<!-- v85: Audience Poll simplified into Crowd Boost.
+     Keeps answer logic, question rotation, and steal fix untouched. -->
+<script id="bp-v85-audience-poll-simplified">
+(function(){
+  if(window.__bpV85AudiencePollFix) return;
+  window.__bpV85AudiencePollFix = true;
+
+  function isAudiencePoll(space){
+    const txt = String(
+      (space && (space.type || space.name || space.label || space.title || space.desc || space.effect)) || ""
+    ).toLowerCase();
+    return txt.includes("audience") || txt.includes("poll");
+  }
+
+  function getPlayerPos(p){
+    return Number((p && (p.pos ?? p.sectionIdx ?? p.position ?? p.loc)) || 0);
+  }
+
+  function setPlayerPos(p, value){
+    if(!p) return;
+    if("pos" in p) p.pos = value;
+    if("sectionIdx" in p) p.sectionIdx = value;
+  }
+
+  function pathEnd(){
+    try{
+      if(typeof PATH !== "undefined" && Array.isArray(PATH)) return PATH.length - 1;
+    }catch(e){}
+    return 65;
+  }
+
+  function crowdBoost(player){
+    if(!player) return;
+
+    const boost = Math.random() < 0.5 ? 1 : 2;
+    const oldPos = getPlayerPos(player);
+    const newPos = Math.min(pathEnd(), oldPos + boost);
+    setPlayerPos(player, newPos);
+
+    try{ addLog("📣 Crowd Boost! " + (player.name || "Player") + " moves +" + boost + "."); }catch(e){}
+
+    try{
+      const msg = document.createElement("div");
+      msg.className = "bp-v85-crowd-boost-toast";
+      msg.textContent = "📣 CROWD BOOST! +" + boost;
+      document.body.appendChild(msg);
+      setTimeout(function(){ try{ msg.remove(); }catch(e){} }, 1500);
+    }catch(e){}
+
+    try{ draw && draw(); }catch(e){}
+    try{ updateUI && updateUI(); }catch(e){}
+  }
+
+  // Override Audience Poll special handling only.
+  try{
+    if(typeof window.applySpecial === "function" && !window.applySpecial.__bpV85AudiencePoll){
+      const oldApplySpecial = window.applySpecial;
+      window.applySpecial = function(space, player){
+        try{
+          if(isAudiencePoll(space)){
+            crowdBoost(player);
+            return;
+          }
+        }catch(e){}
+        return oldApplySpecial.apply(this, arguments);
+      };
+      window.applySpecial.__bpV85AudiencePoll = true;
+      try{ applySpecial = window.applySpecial; }catch(e){}
+    }
+  }catch(e){}
+
+  // If old poll modal somehow appears, auto-close/hide it.
+  function hidePollUI(){
+    try{
+      document.querySelectorAll(".poll-overlay,#pollOverlay").forEach(function(el){
+        el.classList.add("hidden");
+        el.style.display = "none";
+      });
+    }catch(e){}
+  }
+
+  try{
+    new MutationObserver(hidePollUI).observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+
+  window.BP_AUDIENCE_POLL_MODE = "simplified-crowd-boost";
+  console.log("v85 Audience Poll simplified into Crowd Boost");
+})();
+</script>
+
+<style id="bp-v85-audience-poll-simplified-css">
+  .bp-v85-crowd-boost-toast{
+    position:fixed;
+    left:50%;
+    top:42%;
+    transform:translate(-50%,-50%);
+    z-index:900;
+    padding:12px 20px;
+    border-radius:16px;
+    background:linear-gradient(135deg,rgba(245,197,24,.96),rgba(255,149,0,.96));
+    color:#080808;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.35rem;
+    letter-spacing:.12em;
+    box-shadow:0 12px 36px rgba(245,197,24,.42),0 0 50px rgba(245,197,24,.22);
+    pointer-events:none;
+    animation:bpV85CrowdBoost 1.45s ease-out forwards;
+  }
+  @keyframes bpV85CrowdBoost{
+    0%{opacity:0;transform:translate(-50%,-35%) scale(.72);}
+    18%{opacity:1;transform:translate(-50%,-50%) scale(1.08);}
+    78%{opacity:1;}
+    100%{opacity:0;transform:translate(-50%,-70%) scale(.94);}
+  }
+</style>
+
+
+<!-- v86: Free Life prompt fix.
+     If a player answers wrong and has a Free Life, ask immediately whether to use it. -->
+<script id="bp-v86-free-life-prompt-fix">
+(function(){
+  if(window.__bpV86FreeLifeFix) return;
+  window.__bpV86FreeLifeFix = true;
+
+  let freeLifeActive = false;
+  let suppressNextWrongPenalty = false;
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function getFreeLifeCount(p){
+    if(!p) return 0;
+
+    const paths = [
+      ["freeLife"],
+      ["freeLives"],
+      ["life"],
+      ["lives"],
+      ["powers","freeLife"],
+      ["powers","freeLives"],
+      ["powerCards","freeLife"],
+      ["powerCards","freeLives"],
+      ["cards","freeLife"],
+      ["cards","freeLives"],
+      ["lifelines","freeLife"],
+      ["lifelines","freeLives"]
+    ];
+
+    for(const path of paths){
+      let obj = p;
+      let ok = true;
+      for(const key of path){
+        if(obj && Object.prototype.hasOwnProperty.call(obj,key)){
+          obj = obj[key];
+        } else {
+          ok = false;
+          break;
+        }
+      }
+      if(ok && Number(obj) > 0) return Number(obj);
+    }
+
+    // Some builds store cards as arrays/objects by label/type.
+    const buckets = [p.powerCards, p.cards, p.powers, p.lifelines];
+    for(const bucket of buckets){
+      if(Array.isArray(bucket)){
+        const found = bucket.find(card => {
+          const txt = String((card && (card.id || card.type || card.name || card.label)) || card || "").toLowerCase();
+          return txt.includes("free") && txt.includes("life");
+        });
+        if(found){
+          if(typeof found === "number") return found;
+          if(typeof found.count === "number") return found.count;
+          if(typeof found.qty === "number") return found.qty;
+          return 1;
+        }
+      } else if(bucket && typeof bucket === "object"){
+        for(const [k,v] of Object.entries(bucket)){
+          const key = String(k).toLowerCase();
+          if((key.includes("free") && key.includes("life")) || key === "life" || key === "lives"){
+            if(Number(v) > 0) return Number(v);
+          }
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  function setNested(obj, path, val){
+    let cur = obj;
+    for(let i=0;i<path.length-1;i++){
+      if(!cur || !Object.prototype.hasOwnProperty.call(cur,path[i])) return false;
+      cur = cur[path[i]];
+    }
+    const last = path[path.length-1];
+    if(cur && Object.prototype.hasOwnProperty.call(cur,last)){
+      cur[last] = val;
+      return true;
+    }
+    return false;
+  }
+
+  function consumeFreeLife(p){
+    if(!p) return false;
+
+    const paths = [
+      ["freeLife"],["freeLives"],["life"],["lives"],
+      ["powers","freeLife"],["powers","freeLives"],
+      ["powerCards","freeLife"],["powerCards","freeLives"],
+      ["cards","freeLife"],["cards","freeLives"],
+      ["lifelines","freeLife"],["lifelines","freeLives"]
+    ];
+
+    for(const path of paths){
+      let obj=p, ok=true;
+      for(const key of path){
+        if(obj && Object.prototype.hasOwnProperty.call(obj,key)) obj=obj[key];
+        else {ok=false;break;}
+      }
+      if(ok && Number(obj)>0){
+        setNested(p,path,Number(obj)-1);
+        return true;
+      }
+    }
+
+    const buckets = [p.powerCards, p.cards, p.powers, p.lifelines];
+    for(const bucket of buckets){
+      if(bucket && typeof bucket === "object" && !Array.isArray(bucket)){
+        for(const [k,v] of Object.entries(bucket)){
+          const key = String(k).toLowerCase();
+          if(((key.includes("free") && key.includes("life")) || key === "life" || key === "lives") && Number(v)>0){
+            bucket[k]=Number(v)-1;
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function setFeedback(text, ok){
+    try{
+      const fb=document.getElementById("qFeedback");
+      if(fb){
+        fb.textContent=text;
+        fb.className="q-feedback " + (ok ? "ok" : "bad");
+      }
+    }catch(e){}
+  }
+
+  function showFreeLifePrompt(){
+    if(document.getElementById("bpFreeLifePrompt")) return;
+    const p=currentPlayer();
+    if(!p || getFreeLifeCount(p)<=0) return;
+
+    const box=document.querySelector(".q-box");
+    const cont=document.getElementById("contBtn");
+    if(!box) return;
+
+    const prompt=document.createElement("div");
+    prompt.id="bpFreeLifePrompt";
+    prompt.className="bp-free-life-prompt";
+    prompt.innerHTML = `
+      <div class="bp-free-life-title">💚 Use Free Life?</div>
+      <div class="bp-free-life-text">You got it wrong, but you have a Free Life. Use it now and try another question?</div>
+      <div class="bp-free-life-actions">
+        <button type="button" id="bpUseFreeLifeBtn" class="bp-free-life-btn yes">Use Free Life</button>
+        <button type="button" id="bpSkipFreeLifeBtn" class="bp-free-life-btn no">No Thanks</button>
+      </div>
+    `;
+
+    if(cont && cont.parentNode){
+      cont.parentNode.insertBefore(prompt, cont);
+      cont.classList.add("hidden");
+    } else {
+      box.appendChild(prompt);
+    }
+
+    document.getElementById("bpUseFreeLifeBtn").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const player=currentPlayer();
+      if(!consumeFreeLife(player)){
+        prompt.remove();
+        if(cont) cont.classList.remove("hidden");
+        return;
+      }
+
+      try{ addLog("💚 " + ((player && player.name) || "Player") + " used a Free Life!"); }catch(err){}
+      setFeedback("💚 Free Life used! Try a new question.", true);
+      prompt.remove();
+
+      // Re-enable answering and show a fresh question without moving/penalizing.
+      try{
+        waitingAnswer = true;
+        document.querySelectorAll("#qAnswers .ans-btn").forEach(b=>{
+          b.disabled=false;
+          b.classList.remove("correct","wrong");
+        });
+      }catch(err){}
+
+      // Draw another question for the same player.
+      try{
+        const p=currentPlayer();
+        const did = (typeof getPlayerDecadeId === "function") ? getPlayerDecadeId(p) :
+                    (p && p._did) ? p._did : "00s";
+        const q = (typeof getFilteredQ === "function") ? getFilteredQ(did) :
+                  (typeof getQ === "function") ? getQ(did) : null;
+
+        if(q){
+          curQ = q;
+          if(document.getElementById("qText")) document.getElementById("qText").textContent = q.q;
+          const qa=document.getElementById("qAnswers");
+          if(qa){
+            qa.innerHTML = q.a.map((ans,i)=>
+              `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
+            ).join("");
+          }
+          if(cont) cont.classList.add("hidden");
+          setFeedback("", true);
+        } else {
+          if(cont) cont.classList.remove("hidden");
+        }
+      }catch(err){
+        console.warn("Free Life new question failed", err);
+        if(cont) cont.classList.remove("hidden");
+      }
+
+      try{ updateUI && updateUI(); }catch(err){}
+    }, {passive:false});
+
+    document.getElementById("bpSkipFreeLifeBtn").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      prompt.remove();
+      if(cont) cont.classList.remove("hidden");
+      setFeedback("Incorrect.", false);
+    }, {passive:false});
+  }
+
+  // Wrap checkAns lightly: let original answer handling run, then if wrong and player has a Free Life,
+  // hide Continue and present the immediate choice.
+  try{
+    if(typeof window.checkAns === "function" && !window.checkAns.__bpV86FreeLife){
+      const oldCheckAns = window.checkAns;
+      window.checkAns = function(idx){
+        const p=currentPlayer();
+        const hadFreeLife = getFreeLifeCount(p)>0;
+        const result = oldCheckAns.apply(this, arguments);
+
+        setTimeout(function(){
+          try{
+            const btns=[...document.querySelectorAll("#qAnswers .ans-btn")];
+            const clicked=btns[idx];
+            const wasWrong = clicked && clicked.classList.contains("wrong");
+            if(hadFreeLife && wasWrong && !freeLifeActive){
+              showFreeLifePrompt();
+            }
+          }catch(e){}
+        }, 80);
+
+        return result;
+      };
+      window.checkAns.__bpV86FreeLife = true;
+      try{ checkAns = window.checkAns; }catch(e){}
+    }
+  }catch(e){}
+
+  window.BP_FREE_LIFE_STATUS=function(){
+    const p=currentPlayer();
+    return {player:p && p.name, freeLifeCount:getFreeLifeCount(p)};
+  };
+
+  console.log("v86 Free Life prompt fix active");
+})();
+</script>
+
+<style id="bp-v86-free-life-prompt-css">
+  .bp-free-life-prompt{
+    margin:10px 0 12px;
+    padding:12px;
+    border-radius:14px;
+    border:1.5px solid rgba(82,183,136,.65);
+    background:linear-gradient(135deg,rgba(82,183,136,.18),rgba(82,183,136,.06));
+    box-shadow:0 0 24px rgba(82,183,136,.18);
+    text-align:center;
+  }
+  .bp-free-life-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.25rem;
+    letter-spacing:.1em;
+    color:#52b788;
+    margin-bottom:4px;
+  }
+  .bp-free-life-text{
+    font-size:.86rem;
+    color:#dceee5;
+    line-height:1.35;
+    margin-bottom:10px;
+    font-weight:700;
+  }
+  .bp-free-life-actions{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+  }
+  .bp-free-life-btn{
+    border:0;
+    border-radius:10px;
+    padding:9px 13px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:.08em;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bp-free-life-btn.yes{
+    background:linear-gradient(135deg,#52b788,#2d9d66);
+    color:#04100a;
+    box-shadow:0 4px 14px rgba(82,183,136,.28);
+  }
+  .bp-free-life-btn.no{
+    background:rgba(255,255,255,.06);
+    color:#aaa;
+    border:1px solid rgba(255,255,255,.16);
+  }
+  @media(max-width:660px){
+    .bp-free-life-actions{flex-direction:column;}
+    .bp-free-life-btn{width:100%;}
+  }
+</style>
+
 </body>
 </html>
