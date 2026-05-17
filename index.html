@@ -27025,6 +27025,3362 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 })();
 </script>
 
+
+<!-- Expansion Pack 13: 70s Soul Funk Disco AM Gold -->
+<script id="bp-expansion-pack-13">
+(function(){
+  const pack = [
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Which 70s artist or group is most associated with 'Shining Star'?",
+    "a": [
+      "The O'Jays",
+      "Village People",
+      "Al Green",
+      "Earth, Wind & Fire"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "R&B",
+    "q": "Who released the 70s classic 'Let's Groove'?",
+    "a": [
+      "Earth, Wind & Fire",
+      "Average White Band",
+      "Commodores",
+      "Gerry Rafferty"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "'Sir Duke' belongs to which 70s artist or group?",
+    "a": [
+      "Bill Withers",
+      "The Trammps",
+      "Stevie Wonder",
+      "Labelle"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Which act is best known for the 70s hit 'Isn't She Lovely'?",
+    "a": [
+      "Commodores",
+      "Stevie Wonder",
+      "Al Green",
+      "KC and the Sunshine Band"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Which 70s artist or group is most associated with 'Signed, Sealed, Delivered'?",
+    "a": [
+      "Marvin Gaye",
+      "The Emotions",
+      "Earth, Wind & Fire",
+      "Stevie Wonder"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Who released the 70s classic 'Let's Stay Together'?",
+    "a": [
+      "The O'Jays",
+      "Donna Summer",
+      "Al Green",
+      "Commodores"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "'Love and Happiness' belongs to which 70s artist or group?",
+    "a": [
+      "Al Green",
+      "Chic",
+      "Labelle",
+      "Donna Summer"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Which act is best known for the 70s hit 'Ain't No Sunshine'?",
+    "a": [
+      "Gladys Knight & the Pips",
+      "Bill Withers",
+      "KC and the Sunshine Band",
+      "Commodores"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Which 70s artist or group is most associated with 'Lady Marmalade'?",
+    "a": [
+      "Gladys Knight & the Pips",
+      "Gerry Rafferty",
+      "Labelle",
+      "The Trammps"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Who released the 70s classic 'Pick Up the Pieces'?",
+    "a": [
+      "The Emotions",
+      "Average White Band",
+      "Gloria Gaynor",
+      "Labelle"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "'Best of My Love' belongs to which 70s artist or group?",
+    "a": [
+      "Gladys Knight & the Pips",
+      "Marvin Gaye",
+      "Gerry Rafferty",
+      "The Emotions"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Which act is best known for the 70s hit 'Brick House'?",
+    "a": [
+      "Average White Band",
+      "Looking Glass",
+      "Commodores",
+      "Donna Summer"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Which 70s artist or group is most associated with 'Get Down Tonight'?",
+    "a": [
+      "The O'Jays",
+      "Al Green",
+      "KC and the Sunshine Band",
+      "Donna Summer"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "R&B",
+    "q": "Who released the 70s classic 'That's the Way I Like It'?",
+    "a": [
+      "Gladys Knight & the Pips",
+      "KC and the Sunshine Band",
+      "The O'Jays",
+      "Labelle"
+    ],
+    "c": 1
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_13 = { name: "70s Soul Funk Disco AM Gold", added };
+  console.log('Expansion Pack 13 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 14: 60s Motown British Invasion Pop Classics -->
+<script id="bp-expansion-pack-14">
+(function(){
+  const pack = [
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "R&B",
+    "q": "Which 60s artist or group is most associated with 'The Tracks of My Tears'?",
+    "a": [
+      "The Troggs",
+      "The Mamas & the Papas",
+      "Smokey Robinson and the Miracles",
+      "Marvin Gaye"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Rock",
+    "q": "Who released the 60s classic 'Hang On Sloopy'?",
+    "a": [
+      "The Kinks",
+      "Booker T. & the M.G.'s",
+      "The McCoys",
+      "Four Tops"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "'Summer in the City' belongs to which 60s artist or group?",
+    "a": [
+      "Sam & Dave",
+      "The Turtles",
+      "The Lovin' Spoonful",
+      "Wilson Pickett"
+    ],
+    "c": 2
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_14 = { name: "60s Motown British Invasion Pop Classics", added };
+  console.log('Expansion Pack 14 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 15: 90s 2000s Hip Hop RNB Deepener -->
+<script id="bp-expansion-pack-15">
+(function(){
+  const pack = [
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "R&B",
+    "q": "Which artist or act is most associated with the 90s/2000s hit 'Ascension'?",
+    "a": [
+      "Mark Morrison",
+      "Maxwell",
+      "D'Angelo",
+      "702"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "R&B",
+    "q": "Who released the R&B/hip-hop hit 'You Make Me Wanna'?",
+    "a": [
+      "Usher",
+      "D'Angelo",
+      "Ginuwine",
+      "Ja Rule and Ashanti"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "R&B",
+    "q": "'Nice & Slow' belongs to which artist or act?",
+    "a": [
+      "Usher",
+      "Groove Theory",
+      "Dem Franchize Boyz",
+      "Erykah Badu"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "R&B",
+    "q": "Which act is best known for 'Where My Girls At?'?",
+    "a": [
+      "Amerie",
+      "Eve and Gwen Stefani",
+      "702",
+      "Ludacris"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "R&B",
+    "q": "Which artist or act is most associated with the 90s/2000s hit 'Rock wit U'?",
+    "a": [
+      "Fabolous",
+      "D'Angelo",
+      "Groove Theory",
+      "Ashanti"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Who released the R&B/hip-hop hit 'Into You'?",
+    "a": [
+      "Usher",
+      "Fabolous",
+      "Groove Theory",
+      "Amerie"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "'Area Codes' belongs to which artist or act?",
+    "a": [
+      "Ludacris",
+      "702",
+      "Ginuwine",
+      "Fabolous"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Which act is best known for 'Money Maker'?",
+    "a": [
+      "Ludacris",
+      "Petey Pablo",
+      "Ashanti",
+      "Ja Rule and Ashanti"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Which artist or act is most associated with the 90s/2000s hit 'Right Thurr'?",
+    "a": [
+      "Ginuwine",
+      "Ludacris",
+      "Chingy",
+      "Dem Franchize Boyz"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Who released the R&B/hip-hop hit 'One Call Away'?",
+    "a": [
+      "Twista",
+      "Ginuwine",
+      "Usher",
+      "Chingy"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "'Lean Wit It, Rock Wit It' belongs to which artist or act?",
+    "a": [
+      "J-Kwon",
+      "Dem Franchize Boyz",
+      "Petey Pablo",
+      "Eve and Gwen Stefani"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rap",
+    "q": "Which act is best known for 'Freek-a-Leek'?",
+    "a": [
+      "Twista",
+      "Petey Pablo",
+      "Missy Elliott",
+      "Ja Rule and Ashanti"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "R&B",
+    "q": "Which artist or act is most associated with the 90s/2000s hit '1 Thing'?",
+    "a": [
+      "702",
+      "Twista",
+      "Macy Gray",
+      "Amerie"
+    ],
+    "c": 3
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_15 = { name: "90s 2000s Hip Hop RNB Deepener", added };
+  console.log('Expansion Pack 15 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 16: Modern Alternative Indie Country Crossover -->
+<script id="bp-expansion-pack-16">
+(function(){
+  const pack = [
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which modern artist or band is most associated with 'Ophelia'?",
+    "a": [
+      "The Lumineers",
+      "Florence + the Machine",
+      "Of Monsters and Men",
+      "Zac Brown Band"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Who released the modern hit 'Cleopatra'?",
+    "a": [
+      "Calvin Harris",
+      "X Ambassadors",
+      "The Lumineers",
+      "Florence + the Machine"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "'Little Lion Man' belongs to which modern artist or band?",
+    "a": [
+      "The Temper Trap",
+      "Arctic Monkeys",
+      "Foster the People",
+      "Mumford & Sons"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which act is best known for the modern hit 'I Will Wait'?",
+    "a": [
+      "Ava Max",
+      "Young the Giant",
+      "Mumford & Sons",
+      "Grouplove"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which modern artist or band is most associated with 'Dog Days Are Over'?",
+    "a": [
+      "Florence + the Machine",
+      "Darius Rucker",
+      "Calvin Harris",
+      "Foster the People"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Who released the modern hit 'Shake It Out'?",
+    "a": [
+      "Passion Pit",
+      "Darius Rucker",
+      "George Ezra",
+      "Florence + the Machine"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Electric Love' belongs to which modern artist or band?",
+    "a": [
+      "The Lumineers",
+      "Børns",
+      "Of Monsters and Men",
+      "Mumford & Sons"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which act is best known for the modern hit 'Renegades'?",
+    "a": [
+      "Milky Chance",
+      "Lady A",
+      "Børns",
+      "X Ambassadors"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which modern artist or band is most associated with 'Unsteady'?",
+    "a": [
+      "Darius Rucker",
+      "Calvin Harris",
+      "X Ambassadors",
+      "George Ezra"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the modern hit 'Rude'?",
+    "a": [
+      "Magic!",
+      "Calvin Harris",
+      "Young the Giant",
+      "Børns"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Budapest' belongs to which modern artist or band?",
+    "a": [
+      "Lady A",
+      "Arctic Monkeys",
+      "George Ezra",
+      "Edward Sharpe & the Magnetic Zeros"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which act is best known for the modern hit 'Tongue Tied'?",
+    "a": [
+      "Zac Brown Band",
+      "Magic!",
+      "Edward Sharpe & the Magnetic Zeros",
+      "Grouplove"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which modern artist or band is most associated with 'Anna Sun'?",
+    "a": [
+      "Walk the Moon",
+      "George Ezra",
+      "M83",
+      "Magic!"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Who released the modern hit 'Sit Next to Me'?",
+    "a": [
+      "The Lumineers",
+      "George Ezra",
+      "Foster the People",
+      "M83"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "'Mountain Sound' belongs to which modern artist or band?",
+    "a": [
+      "Magic!",
+      "Thomas Rhett",
+      "Of Monsters and Men",
+      "Ava Max"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the modern hit 'Stolen Dance'?",
+    "a": [
+      "George Ezra",
+      "Milky Chance",
+      "Young the Giant",
+      "Magic!"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which modern artist or band is most associated with 'Cough Syrup'?",
+    "a": [
+      "Zac Brown Band",
+      "Ava Max",
+      "Young the Giant",
+      "Darius Rucker"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Who released the modern hit 'My Body'?",
+    "a": [
+      "Grouplove",
+      "Walk the Moon",
+      "Young the Giant",
+      "The Lumineers"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "'Do I Wanna Know?' belongs to which modern artist or band?",
+    "a": [
+      "Lady A",
+      "Of Monsters and Men",
+      "Calvin Harris",
+      "Arctic Monkeys"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Rock",
+    "q": "Which act is best known for the modern hit 'Why'd You Only Call Me When You're High?'?",
+    "a": [
+      "Passion Pit",
+      "Young the Giant",
+      "Mumford & Sons",
+      "Arctic Monkeys"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which modern artist or band is most associated with 'Take a Walk'?",
+    "a": [
+      "Walk the Moon",
+      "Passion Pit",
+      "Edward Sharpe & the Magnetic Zeros",
+      "Grouplove"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the modern hit 'Midnight City'?",
+    "a": [
+      "Young the Giant",
+      "Passion Pit",
+      "M83",
+      "Milky Chance"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Feel So Close' belongs to which modern artist or band?",
+    "a": [
+      "Calvin Harris",
+      "Young the Giant",
+      "Foster the People",
+      "M83"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the modern hit 'Sweet but Psycho'?",
+    "a": [
+      "Ava Max",
+      "The Lumineers",
+      "Of Monsters and Men",
+      "Sam Hunt"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which modern artist or band is most associated with 'Take Your Time'?",
+    "a": [
+      "Sam Hunt",
+      "Zac Brown Band",
+      "Mumford & Sons",
+      "Grouplove"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the modern hit 'Body Like a Back Road'?",
+    "a": [
+      "Passion Pit",
+      "Milky Chance",
+      "Darius Rucker",
+      "Sam Hunt"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Die a Happy Man' belongs to which modern artist or band?",
+    "a": [
+      "Mumford & Sons",
+      "Arctic Monkeys",
+      "Thomas Rhett",
+      "Milky Chance"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the modern hit 'Chicken Fried'?",
+    "a": [
+      "Sam Hunt",
+      "Børns",
+      "Zac Brown Band",
+      "The Temper Trap"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which modern artist or band is most associated with 'Colder Weather'?",
+    "a": [
+      "Grouplove",
+      "Young the Giant",
+      "Mumford & Sons",
+      "Zac Brown Band"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the modern hit 'Wagon Wheel'?",
+    "a": [
+      "Darius Rucker",
+      "The Lumineers",
+      "Milky Chance",
+      "Grouplove"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Need You Now' belongs to which modern artist or band?",
+    "a": [
+      "Arctic Monkeys",
+      "Passion Pit",
+      "Lady A",
+      "George Ezra"
+    ],
+    "c": 2
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_16 = { name: "Modern Alternative Indie Country Crossover", added };
+  console.log('Expansion Pack 16 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 17: Female Pop Icons -->
+<script id="bp-expansion-pack-17">
+(function(){
+  const pack = [
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Which female pop icon is most associated with 'Rhythm Nation'?",
+    "a": [
+      "Taylor Swift",
+      "Pink",
+      "Whitney Houston",
+      "Janet Jackson"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "R&B",
+    "q": "Who released the hit 'That's the Way Love Goes'?",
+    "a": [
+      "Whitney Houston",
+      "Rihanna",
+      "Ariana Grande",
+      "Janet Jackson"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "'Together Again' belongs to which pop icon?",
+    "a": [
+      "Janet Jackson",
+      "Avril Lavigne",
+      "Madonna",
+      "Rihanna"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which artist is best known for 'It's All Coming Back to Me Now'?",
+    "a": [
+      "Mariah Carey",
+      "Ariana Grande",
+      "Avril Lavigne",
+      "Celine Dion"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which female pop icon is most associated with 'I'm Alive'?",
+    "a": [
+      "Ariana Grande",
+      "Celine Dion",
+      "Avril Lavigne",
+      "Dua Lipa"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the hit 'Gimme More'?",
+    "a": [
+      "Madonna",
+      "Rihanna",
+      "Billie Eilish",
+      "Britney Spears"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'What a Girl Wants' belongs to which pop icon?",
+    "a": [
+      "Avril Lavigne",
+      "Kelly Clarkson",
+      "Pink",
+      "Christina Aguilera"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist is best known for 'Ain't No Other Man'?",
+    "a": [
+      "Whitney Houston",
+      "Christina Aguilera",
+      "Avril Lavigne",
+      "Beyoncé"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "R&B",
+    "q": "Which female pop icon is most associated with 'Love on Top'?",
+    "a": [
+      "Beyoncé",
+      "Christina Aguilera",
+      "Ariana Grande",
+      "Janet Jackson"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the hit 'Only Girl'?",
+    "a": [
+      "Mariah Carey",
+      "Gwen Stefani",
+      "Rihanna",
+      "Janet Jackson"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Paparazzi' belongs to which pop icon?",
+    "a": [
+      "Rihanna",
+      "Lady Gaga",
+      "Celine Dion",
+      "Billie Eilish"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist is best known for 'The Edge of Glory'?",
+    "a": [
+      "Pink",
+      "Christina Aguilera",
+      "Billie Eilish",
+      "Lady Gaga"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which female pop icon is most associated with 'Applause'?",
+    "a": [
+      "Ariana Grande",
+      "Celine Dion",
+      "Lady Gaga",
+      "Janet Jackson"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the hit 'Million Reasons'?",
+    "a": [
+      "Janet Jackson",
+      "Lady Gaga",
+      "Ariana Grande",
+      "Mariah Carey"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'You Belong with Me' belongs to which pop icon?",
+    "a": [
+      "Taylor Swift",
+      "Rihanna",
+      "Beyoncé",
+      "Avril Lavigne"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist is best known for 'I Knew You Were Trouble'?",
+    "a": [
+      "Christina Aguilera",
+      "Rihanna",
+      "Taylor Swift",
+      "Whitney Houston"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which female pop icon is most associated with 'Wildest Dreams'?",
+    "a": [
+      "Pink",
+      "Christina Aguilera",
+      "Britney Spears",
+      "Taylor Swift"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the hit 'No Tears Left to Cry'?",
+    "a": [
+      "Ariana Grande",
+      "Whitney Houston",
+      "Madonna",
+      "Kelly Clarkson"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'God Is a Woman' belongs to which pop icon?",
+    "a": [
+      "Ariana Grande",
+      "Lady Gaga",
+      "Whitney Houston",
+      "Britney Spears"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist is best known for 'Break Up with Your Girlfriend'?",
+    "a": [
+      "Avril Lavigne",
+      "Ariana Grande",
+      "Christina Aguilera",
+      "Janet Jackson"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which female pop icon is most associated with 'When the Party's Over'?",
+    "a": [
+      "Billie Eilish",
+      "Pink",
+      "Avril Lavigne",
+      "Lady Gaga"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the hit 'Ocean Eyes'?",
+    "a": [
+      "Billie Eilish",
+      "Avril Lavigne",
+      "Pink",
+      "Janet Jackson"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Happier Than Ever' belongs to which pop icon?",
+    "a": [
+      "Gwen Stefani",
+      "Celine Dion",
+      "Billie Eilish",
+      "Ariana Grande"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist is best known for 'Behind These Hazel Eyes'?",
+    "a": [
+      "Kelly Clarkson",
+      "Celine Dion",
+      "Taylor Swift",
+      "Billie Eilish"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which female pop icon is most associated with 'My Life Would Suck Without You'?",
+    "a": [
+      "Kelly Clarkson",
+      "Taylor Swift",
+      "Ariana Grande",
+      "Gwen Stefani"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the hit 'Just Like a Pill'?",
+    "a": [
+      "Pink",
+      "Dua Lipa",
+      "Whitney Houston",
+      "Taylor Swift"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Raise Your Glass' belongs to which pop icon?",
+    "a": [
+      "Lady Gaga",
+      "Ariana Grande",
+      "Kelly Clarkson",
+      "Pink"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which artist is best known for 'Just Give Me a Reason'?",
+    "a": [
+      "Whitney Houston",
+      "Rihanna",
+      "Celine Dion",
+      "Pink"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which female pop icon is most associated with 'Rich Girl'?",
+    "a": [
+      "Madonna",
+      "Beyoncé",
+      "Celine Dion",
+      "Gwen Stefani"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the hit 'Sk8er Boi'?",
+    "a": [
+      "Britney Spears",
+      "Taylor Swift",
+      "Christina Aguilera",
+      "Avril Lavigne"
+    ],
+    "c": 3
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_17 = { name: "Female Pop Icons", added };
+  console.log('Expansion Pack 17 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 18: 90s Alternative Rock Deep Cuts Radio-Friendly -->
+<script id="bp-expansion-pack-18">
+(function(){
+  const pack = [
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which 90s alternative band is most associated with 'The World I Know'?",
+    "a": [
+      "Eels",
+      "The Breeders",
+      "Collective Soul",
+      "The Sundays"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Who released the 90s alt-rock track 'Fall Down'?",
+    "a": [
+      "Hum",
+      "Toad the Wet Sprocket",
+      "Candlebox",
+      "Silverchair"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "'Wax Ecstatic' belongs to which 90s artist or band?",
+    "a": [
+      "Eels",
+      "The Sundays",
+      "The Nixons",
+      "Sponge"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which act is best known for the 90s radio song 'Ana's Song'?",
+    "a": [
+      "Candlebox",
+      "Silverchair",
+      "Our Lady Peace",
+      "Garbage"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which 90s alternative band is most associated with 'Cover Me'?",
+    "a": [
+      "Soul Asylum",
+      "Silverchair",
+      "Candlebox",
+      "Helmet"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Who released the 90s alt-rock track 'Somebody to Shove'?",
+    "a": [
+      "Soul Asylum",
+      "Silverchair",
+      "Local H",
+      "Letters to Cleo"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "'Star 69' belongs to which 90s artist or band?",
+    "a": [
+      "R.E.M.",
+      "The Sundays",
+      "Sponge",
+      "Collective Soul"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which act is best known for the 90s radio song 'Bang and Blame'?",
+    "a": [
+      "The Flys",
+      "Superdrag",
+      "Local H",
+      "R.E.M."
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which 90s alternative band is most associated with 'Superman's Dead'?",
+    "a": [
+      "Our Lady Peace",
+      "The Sundays",
+      "Nada Surf",
+      "The Flys"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Who released the 90s alt-rock track 'Clumsy'?",
+    "a": [
+      "Hum",
+      "Garbage",
+      "Collective Soul",
+      "Our Lady Peace"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "'My Favourite Game' belongs to which 90s artist or band?",
+    "a": [
+      "Sponge",
+      "Toadies",
+      "The Cardigans",
+      "Soul Asylum"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which act is best known for the 90s radio song 'Here's Where the Story Ends'?",
+    "a": [
+      "The Sundays",
+      "Elastica",
+      "R.E.M.",
+      "Fuel"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which 90s alternative band is most associated with 'Divine Hammer'?",
+    "a": [
+      "Spacehog",
+      "Nada Surf",
+      "Letters to Cleo",
+      "The Breeders"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Who released the 90s alt-rock track 'Gepetto'?",
+    "a": [
+      "Belly",
+      "Eels",
+      "R.E.M.",
+      "Sponge"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "hard",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "'The Pod' belongs to which 90s artist or band?",
+    "a": [
+      "Collective Soul",
+      "Hum",
+      "Toad the Wet Sprocket",
+      "Nada Surf"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which act is best known for the 90s radio song 'Cruel to Be Kind'?",
+    "a": [
+      "Spacehog",
+      "Toadies",
+      "Our Lady Peace",
+      "Veruca Salt"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "hard",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which 90s alternative band is most associated with 'Milquetoast'?",
+    "a": [
+      "Dog's Eye View",
+      "Helmet",
+      "Local H",
+      "Hum"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Who released the 90s alt-rock track 'Susan's House'?",
+    "a": [
+      "Sponge",
+      "The Breeders",
+      "Local H",
+      "Eels"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "'Sucked Out' belongs to which 90s artist or band?",
+    "a": [
+      "Veruca Salt",
+      "Superdrag",
+      "Soul Asylum",
+      "Candlebox"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which act is best known for the 90s radio song 'Everything Falls Apart'?",
+    "a": [
+      "The Sundays",
+      "Silverchair",
+      "Candlebox",
+      "Dog's Eye View"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which 90s alternative band is most associated with 'Ladyfingers'?",
+    "a": [
+      "Letters to Cleo",
+      "White Town",
+      "Bran Van 3000",
+      "Luscious Jackson"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Who released the 90s alt-rock track 'Your Woman'?",
+    "a": [
+      "Letters to Cleo",
+      "Garbage",
+      "White Town",
+      "Cornershop"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "'Drinking in L.A.' belongs to which 90s artist or band?",
+    "a": [
+      "The Cardigans",
+      "Bran Van 3000",
+      "White Town",
+      "Letters to Cleo"
+    ],
+    "c": 1
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_18 = { name: "90s Alternative Rock Deep Cuts Radio-Friendly", added };
+  console.log('Expansion Pack 18 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 19: 80s MTV New Wave Pop-Rock Round 2 -->
+<script id="bp-expansion-pack-19">
+(function(){
+  const pack = [
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Our Lips Are Sealed'?",
+    "a": [
+      "Erasure",
+      "Belinda Carlisle",
+      "Billy Idol",
+      "The Go-Go's"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Who released the 80s/new wave hit 'Mad About You'?",
+    "a": [
+      "Belinda Carlisle",
+      "Billy Idol",
+      "Pet Shop Boys",
+      "The Bangles"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "'Circle in the Sand' belongs to which 80s artist or band?",
+    "a": [
+      "The Bangles",
+      "Belinda Carlisle",
+      "Erasure",
+      "Blondie"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Rock",
+    "q": "Which act is best known for the 80s track 'Hazy Shade of Winter'?",
+    "a": [
+      "Blondie",
+      "The Bangles",
+      "The Cure",
+      "Billy Idol"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Rock",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Invincible'?",
+    "a": [
+      "Joan Jett",
+      "The Bangles",
+      "Pat Benatar",
+      "The Cult"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Rock",
+    "q": "Who released the 80s/new wave hit 'I Hate Myself for Loving You'?",
+    "a": [
+      "The Cult",
+      "Billy Idol",
+      "Joan Jett",
+      "The Cure"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "Rock",
+    "q": "'White Wedding' belongs to which 80s artist or band?",
+    "a": [
+      "Billy Idol",
+      "Pat Benatar",
+      "Joan Jett",
+      "The Cult"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Pop",
+    "q": "Which act is best known for the 80s track 'Eyes Without a Face'?",
+    "a": [
+      "Billy Idol",
+      "The Go-Go's",
+      "Pat Benatar",
+      "Belinda Carlisle"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Rock",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Dancing with Myself'?",
+    "a": [
+      "The Cult",
+      "Billy Idol",
+      "Joan Jett",
+      "The Cure"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Who released the 80s/new wave hit 'Things Can Only Get Better'?",
+    "a": [
+      "Adam Ant",
+      "Howard Jones",
+      "Pet Shop Boys",
+      "The Church"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "'No One Is to Blame' belongs to which 80s artist or band?",
+    "a": [
+      "Howard Jones",
+      "Thompson Twins",
+      "Erasure",
+      "Depeche Mode"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which act is best known for the 80s track 'Hold Me Now'?",
+    "a": [
+      "Bow Wow Wow",
+      "Thompson Twins",
+      "Level 42",
+      "New Order"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Doctor! Doctor!'?",
+    "a": [
+      "Thompson Twins",
+      "Siouxsie and the Banshees",
+      "Love and Rockets",
+      "Bow Wow Wow"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Who released the 80s/new wave hit 'King for a Day'?",
+    "a": [
+      "Pet Shop Boys",
+      "Thompson Twins",
+      "Adam Ant",
+      "The Cure"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "'Lessons in Love' belongs to which 80s artist or band?",
+    "a": [
+      "Level 42",
+      "Blondie",
+      "The Cure",
+      "Siouxsie and the Banshees"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which act is best known for the 80s track 'Enola Gay'?",
+    "a": [
+      "Thompson Twins",
+      "Adam Ant",
+      "Orchestral Manoeuvres in the Dark",
+      "Bow Wow Wow"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Love My Way'?",
+    "a": [
+      "The Psychedelic Furs",
+      "Bow Wow Wow",
+      "Orchestral Manoeuvres in the Dark",
+      "Level 42"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Who released the 80s/new wave hit 'The Ghost in You'?",
+    "a": [
+      "Blondie",
+      "The Psychedelic Furs",
+      "New Order",
+      "Siouxsie and the Banshees"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "'Just Can't Get Enough' belongs to which 80s artist or band?",
+    "a": [
+      "Howard Jones",
+      "Orchestral Manoeuvres in the Dark",
+      "Siouxsie and the Banshees",
+      "Depeche Mode"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which act is best known for the 80s track 'People Are People'?",
+    "a": [
+      "The Church",
+      "Erasure",
+      "The Cure",
+      "Depeche Mode"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "New Wave",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Enjoy the Silence'?",
+    "a": [
+      "Bow Wow Wow",
+      "Howard Jones",
+      "Depeche Mode",
+      "Yaz"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Who released the 80s/new wave hit 'Always on My Mind'?",
+    "a": [
+      "The Church",
+      "Adam Ant",
+      "Siouxsie and the Banshees",
+      "Pet Shop Boys"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "'It's a Sin' belongs to which 80s artist or band?",
+    "a": [
+      "Thompson Twins",
+      "Yaz",
+      "Pet Shop Boys",
+      "Siouxsie and the Banshees"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which act is best known for the 80s track 'Chains of Love'?",
+    "a": [
+      "New Order",
+      "Bow Wow Wow",
+      "Siouxsie and the Banshees",
+      "Erasure"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Rock",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Friday I'm in Love'?",
+    "a": [
+      "Billy Idol",
+      "The Bangles",
+      "The Cure",
+      "Blondie"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Who released the 80s/new wave hit 'Pictures of You'?",
+    "a": [
+      "The Psychedelic Furs",
+      "Siouxsie and the Banshees",
+      "The Cure",
+      "Adam Ant"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Rock",
+    "q": "'She Sells Sanctuary' belongs to which 80s artist or band?",
+    "a": [
+      "Blondie",
+      "Billy Idol",
+      "The Cure",
+      "The Cult"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "Rock",
+    "q": "Which act is best known for the 80s track 'Fire Woman'?",
+    "a": [
+      "The Cult",
+      "Billy Idol",
+      "The Bangles",
+      "Blondie"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which 80s MTV-era artist or band is most associated with 'No New Tale to Tell'?",
+    "a": [
+      "Pet Shop Boys",
+      "The Cure",
+      "Love and Rockets",
+      "Blondie"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Who released the 80s/new wave hit 'So Alive'?",
+    "a": [
+      "Bow Wow Wow",
+      "Love and Rockets",
+      "Depeche Mode",
+      "New Order"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "'Cities in Dust' belongs to which 80s artist or band?",
+    "a": [
+      "Erasure",
+      "Siouxsie and the Banshees",
+      "Depeche Mode",
+      "Adam Ant"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which act is best known for the 80s track 'Peek-a-Boo'?",
+    "a": [
+      "Howard Jones",
+      "Blondie",
+      "Siouxsie and the Banshees",
+      "Yaz"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Which 80s MTV-era artist or band is most associated with 'Goody Two Shoes'?",
+    "a": [
+      "Siouxsie and the Banshees",
+      "Erasure",
+      "Blondie",
+      "Adam Ant"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "80s",
+    "genre": "New Wave",
+    "q": "Who released the 80s/new wave hit 'Stand and Deliver'?",
+    "a": [
+      "The Church",
+      "Adam and the Ants",
+      "Adam Ant",
+      "Orchestral Manoeuvres in the Dark"
+    ],
+    "c": 1
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_19 = { name: "80s MTV New Wave Pop-Rock Round 2", added };
+  console.log('Expansion Pack 19 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 20: 60s 70s Missing Classics -->
+<script id="bp-expansion-pack-20">
+(function(){
+  const pack = [
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Which 60s/70s artist or band is most associated with 'Mrs. Brown, You've Got a Lovely Daughter'?",
+    "a": [
+      "Herman's Hermits",
+      "The New Seekers",
+      "James Taylor",
+      "Looking Glass"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Who released the classic hit 'I'm Henry VIII, I Am'?",
+    "a": [
+      "Brenda Lee",
+      "Herman's Hermits",
+      "Carole King",
+      "Looking Glass"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "'There's a Kind of Hush' belongs to which 60s/70s artist or band?",
+    "a": [
+      "The New Seekers",
+      "Herman's Hermits",
+      "Carly Simon",
+      "James Taylor"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Which act is best known for the classic song 'No Milk Today'?",
+    "a": [
+      "James Taylor",
+      "Walter Egan",
+      "Carole King",
+      "Herman's Hermits"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'Bang a Gong'?",
+    "a": [
+      "Steve Miller Band",
+      "Elvin Bishop",
+      "Bachman-Turner Overdrive",
+      "T. Rex"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Jeepster'?",
+    "a": [
+      "T. Rex",
+      "Gary Wright",
+      "Ozark Mountain Daredevils",
+      "The Guess Who"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'20th Century Boy' belongs to which 60s/70s artist or band?",
+    "a": [
+      "T. Rex",
+      "Norman Greenbaum",
+      "Pure Prairie League",
+      "King Harvest"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which act is best known for the classic song 'Ride a White Swan'?",
+    "a": [
+      "Steve Miller Band",
+      "Five Man Electrical Band",
+      "T. Rex",
+      "King Harvest"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "60s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'Time of the Season'?",
+    "a": [
+      "Linda Ronstadt",
+      "Pure Prairie League",
+      "The Zombies",
+      "T. Rex"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Tell Her No'?",
+    "a": [
+      "Linda Ronstadt",
+      "Ozark Mountain Daredevils",
+      "Pure Prairie League",
+      "The Zombies"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "'Along Comes Mary' belongs to which 60s/70s artist or band?",
+    "a": [
+      "The Association",
+      "Walter Egan",
+      "Carole King",
+      "Brenda Lee"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Which act is best known for the classic song 'Cherish'?",
+    "a": [
+      "Edison Lighthouse",
+      "Linda Ronstadt",
+      "The Association",
+      "Looking Glass"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Which 60s/70s artist or band is most associated with 'Windy'?",
+    "a": [
+      "The New Seekers",
+      "The Association",
+      "Connie Francis",
+      "Brenda Lee"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Who released the classic hit 'Never My Love'?",
+    "a": [
+      "Brenda Lee",
+      "Carole King",
+      "The Association",
+      "England Dan and John Ford Coley"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "50s",
+    "genre": "Pop",
+    "q": "'Who's Sorry Now' belongs to which 60s/70s artist or band?",
+    "a": [
+      "The New Seekers",
+      "Herman's Hermits",
+      "Connie Francis",
+      "Brenda Lee"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Which act is best known for the classic song 'Where the Boys Are'?",
+    "a": [
+      "James Taylor",
+      "Connie Francis",
+      "Brenda Lee",
+      "Herman's Hermits"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "50s",
+    "genre": "Pop",
+    "q": "Which 60s/70s artist or band is most associated with 'Stupid Cupid'?",
+    "a": [
+      "The New Seekers",
+      "Connie Francis",
+      "Carole King",
+      "Brenda Lee"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "50s",
+    "genre": "Pop",
+    "q": "Who released the classic hit 'Rockin' Around the Christmas Tree'?",
+    "a": [
+      "Brenda Lee",
+      "The Association",
+      "Carole King",
+      "Walter Egan"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "'Sweet Nothin's' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Carole King",
+      "Brenda Lee",
+      "Looking Glass",
+      "England Dan and John Ford Coley"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "Which act is best known for the classic song 'It's Too Late'?",
+    "a": [
+      "Carole King",
+      "Walter Egan",
+      "Looking Glass",
+      "Herman's Hermits"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "Which 60s/70s artist or band is most associated with 'How Sweet It Is'?",
+    "a": [
+      "Carole King",
+      "James Taylor",
+      "Edison Lighthouse",
+      "Walter Egan"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Pop",
+    "q": "Who released the classic hit 'Carolina in My Mind'?",
+    "a": [
+      "The Association",
+      "The New Seekers",
+      "James Taylor",
+      "Looking Glass"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'You're No Good' belongs to which 60s/70s artist or band?",
+    "a": [
+      "King Harvest",
+      "The Guess Who",
+      "Linda Ronstadt",
+      "T. Rex"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "Which act is best known for the classic song 'Blue Bayou'?",
+    "a": [
+      "Linda Ronstadt",
+      "Connie Francis",
+      "Herman's Hermits",
+      "Carly Simon"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'When Will I Be Loved'?",
+    "a": [
+      "Stories",
+      "Linda Ronstadt",
+      "Grand Funk Railroad",
+      "Norman Greenbaum"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'It's So Easy'?",
+    "a": [
+      "Brownsville Station",
+      "Stories",
+      "The Zombies",
+      "Linda Ronstadt"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "'You're So Vain' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Carole King",
+      "Brenda Lee",
+      "Carly Simon",
+      "The Association"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "Which act is best known for the classic song 'Anticipation'?",
+    "a": [
+      "Brenda Lee",
+      "Carly Simon",
+      "Looking Glass",
+      "Walter Egan"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'Joy to the World'?",
+    "a": [
+      "T. Rex",
+      "Three Dog Night",
+      "Grand Funk Railroad",
+      "The Zombies"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Mama Told Me Not to Come'?",
+    "a": [
+      "T. Rex",
+      "Norman Greenbaum",
+      "Stories",
+      "Three Dog Night"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'An Old Fashioned Love Song' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Grand Funk Railroad",
+      "The Guess Who",
+      "Steve Miller Band",
+      "Three Dog Night"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which act is best known for the classic song 'American Woman'?",
+    "a": [
+      "King Harvest",
+      "The Guess Who",
+      "Steve Miller Band",
+      "Five Man Electrical Band"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "60s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'These Eyes'?",
+    "a": [
+      "Ozark Mountain Daredevils",
+      "The Guess Who",
+      "King Harvest",
+      "Three Dog Night"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Share the Land'?",
+    "a": [
+      "Ozark Mountain Daredevils",
+      "Linda Ronstadt",
+      "Steve Miller Band",
+      "The Guess Who"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'We're an American Band' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Dr. John",
+      "T. Rex",
+      "Grand Funk Railroad",
+      "Steve Miller Band"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which act is best known for the classic song 'Some Kind of Wonderful'?",
+    "a": [
+      "Linda Ronstadt",
+      "Grand Funk Railroad",
+      "Ozark Mountain Daredevils",
+      "Stealers Wheel"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'You Ain't Seen Nothing Yet'?",
+    "a": [
+      "Linda Ronstadt",
+      "Dr. John",
+      "Brownsville Station",
+      "Bachman-Turner Overdrive"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Takin' Care of Business'?",
+    "a": [
+      "Norman Greenbaum",
+      "Stories",
+      "Bachman-Turner Overdrive",
+      "The Zombies"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'Let It Ride' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Stories",
+      "The Zombies",
+      "Bachman-Turner Overdrive",
+      "Three Dog Night"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which act is best known for the classic song 'Fly Like an Eagle'?",
+    "a": [
+      "Steve Miller Band",
+      "The Guess Who",
+      "King Harvest",
+      "Norman Greenbaum"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'Jet Airliner'?",
+    "a": [
+      "Stories",
+      "Gary Wright",
+      "Five Man Electrical Band",
+      "Steve Miller Band"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Rock'n Me'?",
+    "a": [
+      "Brownsville Station",
+      "King Harvest",
+      "Three Dog Night",
+      "Steve Miller Band"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'Right Place, Wrong Time' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Pure Prairie League",
+      "Grand Funk Railroad",
+      "Dr. John",
+      "Stories"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which act is best known for the classic song 'Spirit in the Sky'?",
+    "a": [
+      "Steve Miller Band",
+      "Dr. John",
+      "The Zombies",
+      "Norman Greenbaum"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'Brother Louie'?",
+    "a": [
+      "The Zombies",
+      "Stories",
+      "Gary Wright",
+      "Grand Funk Railroad"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Signs'?",
+    "a": [
+      "The Guess Who",
+      "Brownsville Station",
+      "Five Man Electrical Band",
+      "Grand Funk Railroad"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "'Love Grows' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Edison Lighthouse",
+      "James Taylor",
+      "Carly Simon",
+      "Linda Ronstadt"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "Which act is best known for the classic song 'I'd Like to Teach the World to Sing'?",
+    "a": [
+      "The New Seekers",
+      "Connie Francis",
+      "James Taylor",
+      "Looking Glass"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "Which 60s/70s artist or band is most associated with 'I'd Really Love to See You Tonight'?",
+    "a": [
+      "Edison Lighthouse",
+      "James Taylor",
+      "England Dan and John Ford Coley",
+      "The New Seekers"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "Who released the classic hit 'Nights Are Forever Without You'?",
+    "a": [
+      "Herman's Hermits",
+      "England Dan and John Ford Coley",
+      "Brenda Lee",
+      "Carly Simon"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Pop",
+    "q": "'Magnet and Steel' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Linda Ronstadt",
+      "Walter Egan",
+      "Looking Glass",
+      "The New Seekers"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which act is best known for the classic song 'Jackie Blue'?",
+    "a": [
+      "Three Dog Night",
+      "Five Man Electrical Band",
+      "Ozark Mountain Daredevils",
+      "Linda Ronstadt"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Which 60s/70s artist or band is most associated with 'Love Is Alive'?",
+    "a": [
+      "Gary Wright",
+      "Grand Funk Railroad",
+      "Brownsville Station",
+      "Ozark Mountain Daredevils"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "Who released the classic hit 'Fooled Around and Fell in Love'?",
+    "a": [
+      "T. Rex",
+      "Elvin Bishop",
+      "Five Man Electrical Band",
+      "Brownsville Station"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "70s",
+    "genre": "Rock",
+    "q": "'Smokin' in the Boys Room' belongs to which 60s/70s artist or band?",
+    "a": [
+      "Grand Funk Railroad",
+      "Norman Greenbaum",
+      "T. Rex",
+      "Brownsville Station"
+    ],
+    "c": 3
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_20 = { name: "60s 70s Missing Classics", added };
+  console.log('Expansion Pack 20 added', added, 'questions');
+})();
+</script>
+
+
+<!-- Expansion Pack 21: Country Country-Crossover -->
+<script id="bp-expansion-pack-21">
+(function(){
+  const pack = [
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Friends in Low Places'?",
+    "a": [
+      "The Chicks",
+      "Garth Brooks",
+      "Jason Aldean",
+      "Kacey Musgraves"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Thunder Rolls'?",
+    "a": [
+      "Darius Rucker",
+      "Garth Brooks",
+      "Jason Aldean",
+      "Faith Hill"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "'Ain't Going Down' belongs to which country/crossover artist?",
+    "a": [
+      "Bebe Rexha and Florida Georgia Line",
+      "Kacey Musgraves",
+      "Garth Brooks",
+      "Jason Aldean"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Man! I Feel Like a Woman!'?",
+    "a": [
+      "Kacey Musgraves",
+      "Morgan Wallen",
+      "Bebe Rexha and Florida Georgia Line",
+      "Shania Twain"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'You're Still the One'?",
+    "a": [
+      "Shania Twain",
+      "Lady A",
+      "Jason Aldean",
+      "Kacey Musgraves"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'That Don't Impress Me Much'?",
+    "a": [
+      "Zach Bryan",
+      "Shania Twain",
+      "Darius Rucker",
+      "Jason Aldean"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "'Any Man of Mine' belongs to which country/crossover artist?",
+    "a": [
+      "Zac Brown Band",
+      "Eric Church",
+      "Darius Rucker",
+      "Shania Twain"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'This Kiss'?",
+    "a": [
+      "Lady A",
+      "Zach Bryan",
+      "Garth Brooks",
+      "Faith Hill"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'The Way You Love Me'?",
+    "a": [
+      "Carrie Underwood",
+      "Faith Hill",
+      "Keith Urban",
+      "Zach Bryan"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Live Like You Were Dying'?",
+    "a": [
+      "Darius Rucker",
+      "Garth Brooks",
+      "Tim McGraw",
+      "Zach Bryan"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "'Something Like That' belongs to which country/crossover artist?",
+    "a": [
+      "Little Big Town",
+      "Tim McGraw",
+      "Chris Stapleton",
+      "Sam Hunt"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Don't Take the Girl'?",
+    "a": [
+      "Bebe Rexha and Florida Georgia Line",
+      "Sam Hunt",
+      "Zac Brown Band",
+      "Tim McGraw"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Cowboy Take Me Away'?",
+    "a": [
+      "The Chicks",
+      "Darius Rucker",
+      "Zach Bryan",
+      "Kacey Musgraves"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "90s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Wide Open Spaces'?",
+    "a": [
+      "Florida Georgia Line",
+      "Darius Rucker",
+      "The Chicks",
+      "Faith Hill"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Goodbye Earl' belongs to which country/crossover artist?",
+    "a": [
+      "Luke Combs",
+      "Thomas Rhett",
+      "Sam Hunt",
+      "The Chicks"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Not Ready to Make Nice'?",
+    "a": [
+      "The Chicks",
+      "Morgan Wallen",
+      "Shania Twain",
+      "Tim McGraw"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Before He Cheats'?",
+    "a": [
+      "Zac Brown Band",
+      "Zach Bryan",
+      "Eric Church",
+      "Carrie Underwood"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Jesus, Take the Wheel'?",
+    "a": [
+      "Eric Church",
+      "Carrie Underwood",
+      "Keith Urban",
+      "Jason Aldean"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Blown Away' belongs to which country/crossover artist?",
+    "a": [
+      "Carrie Underwood",
+      "Jason Aldean",
+      "Lady A",
+      "The Chicks"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Church Bells'?",
+    "a": [
+      "Zach Bryan",
+      "Carrie Underwood",
+      "Shania Twain",
+      "Little Big Town"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Something in the Water'?",
+    "a": [
+      "Eric Church",
+      "Faith Hill",
+      "Carrie Underwood",
+      "The Chicks"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'American Honey'?",
+    "a": [
+      "Shania Twain",
+      "Little Big Town",
+      "Lady A",
+      "Zach Bryan"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Just a Kiss' belongs to which country/crossover artist?",
+    "a": [
+      "Zach Bryan",
+      "The Chicks",
+      "Lady A",
+      "Luke Combs"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Homegrown'?",
+    "a": [
+      "Lady A",
+      "Shania Twain",
+      "Zach Bryan",
+      "Zac Brown Band"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Come Back Song'?",
+    "a": [
+      "Darius Rucker",
+      "Luke Combs",
+      "Tim McGraw",
+      "Lady A"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Beautiful Crazy'?",
+    "a": [
+      "Faith Hill",
+      "Zach Bryan",
+      "Luke Combs",
+      "Little Big Town"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'When It Rains It Pours' belongs to which country/crossover artist?",
+    "a": [
+      "Kacey Musgraves",
+      "Chris Stapleton",
+      "Sam Hunt",
+      "Luke Combs"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Beer Never Broke My Heart'?",
+    "a": [
+      "The Chicks",
+      "Darius Rucker",
+      "Thomas Rhett",
+      "Luke Combs"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Whiskey Glasses'?",
+    "a": [
+      "Eric Church",
+      "Jason Aldean",
+      "Morgan Wallen",
+      "Carrie Underwood"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Sand in My Boots'?",
+    "a": [
+      "Tim McGraw",
+      "Sam Hunt",
+      "Morgan Wallen",
+      "Luke Combs"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'7 Summers' belongs to which country/crossover artist?",
+    "a": [
+      "Eric Church",
+      "Garth Brooks",
+      "Chris Stapleton",
+      "Morgan Wallen"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Marry Me'?",
+    "a": [
+      "Faith Hill",
+      "Thomas Rhett",
+      "Chris Stapleton",
+      "Bebe Rexha and Florida Georgia Line"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Life Changes'?",
+    "a": [
+      "Darius Rucker",
+      "Thomas Rhett",
+      "Faith Hill",
+      "Garth Brooks"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Dirt Road Anthem'?",
+    "a": [
+      "Faith Hill",
+      "Jason Aldean",
+      "Lady A",
+      "Little Big Town"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'She's Country' belongs to which country/crossover artist?",
+    "a": [
+      "Shania Twain",
+      "Zac Brown Band",
+      "Thomas Rhett",
+      "Jason Aldean"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Burnin' It Down'?",
+    "a": [
+      "Jason Aldean",
+      "Tim McGraw",
+      "Zach Bryan",
+      "Thomas Rhett"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "easy",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Meant to Be'?",
+    "a": [
+      "Little Big Town",
+      "Bebe Rexha and Florida Georgia Line",
+      "Kacey Musgraves",
+      "Florida Georgia Line"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Drink in My Hand'?",
+    "a": [
+      "Eric Church",
+      "Keith Urban",
+      "Luke Combs",
+      "Jason Aldean"
+    ],
+    "c": 0
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "'Blue Ain't Your Color' belongs to which country/crossover artist?",
+    "a": [
+      "Eric Church",
+      "Zac Brown Band",
+      "Morgan Wallen",
+      "Keith Urban"
+    ],
+    "c": 3
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which act is best known for the country hit 'Somebody Like You'?",
+    "a": [
+      "Luke Combs",
+      "Keith Urban",
+      "Chris Stapleton",
+      "Lady A"
+    ],
+    "c": 1
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Which country/crossover artist is most associated with 'Girl Crush'?",
+    "a": [
+      "The Chicks",
+      "Eric Church",
+      "Little Big Town",
+      "Thomas Rhett"
+    ],
+    "c": 2
+  },
+  {
+    "diff": "medium",
+    "decade": "00s",
+    "genre": "Pop",
+    "q": "Who released the country crossover hit 'Pontoon'?",
+    "a": [
+      "Jason Aldean",
+      "Little Big Town",
+      "Kacey Musgraves",
+      "Carrie Underwood"
+    ],
+    "c": 1
+  }
+];
+  let added = 0;
+  pack.forEach(item => {
+    const {diff, decade, genre, q, a, c} = item;
+    if (typeof TRIVIA !== 'undefined' && TRIVIA[diff] && TRIVIA[diff][decade]) {
+      TRIVIA[diff][decade].push({genre, q, a, c});
+      added++;
+    }
+  });
+  window.BP_EXPANSION_PACK_21 = { name: "Country Country-Crossover", added };
+  console.log('Expansion Pack 21 added', added, 'questions');
+})();
+</script>
+
 <!-- v86: Free Life prompt fix.
      If a player answers wrong and has a Free Life, ask immediately whether to use it. -->
 <script id="bp-v86-free-life-prompt-fix">
