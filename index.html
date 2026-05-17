@@ -31182,5 +31182,193 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   }
 </style>
 
+
+<!-- v103: Free Life consumption sync.
+     When Free Life is used, remove/decrement every visible/card-storage version too. -->
+<script id="bp-v103-free-life-consume-card-sync">
+(function(){
+  if(window.__bpV103FreeLifeConsumeSync) return;
+  window.__bpV103FreeLifeConsumeSync = true;
+
+  const FREE_LIFE_KEY = "__bpFreeLives";
+
+  function isFreeLifeKey(k){
+    const s = String(k || "").toLowerCase().replace(/[^a-z0-9]/g,"");
+    return s === "freelife" || s === "freelives" || s === "life" || s === "lives";
+  }
+
+  function isFreeLifeCard(card){
+    const s = String(
+      (card && (card.id || card.type || card.key || card.name || card.label || card.title)) || card || ""
+    ).toLowerCase().replace(/[^a-z0-9]/g,"");
+    return s.includes("freelife") || (s.includes("free") && s.includes("life"));
+  }
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function getFreeLifeCount(p){
+    if(!p) return 0;
+    if(typeof p[FREE_LIFE_KEY] !== "number") p[FREE_LIFE_KEY] = 1;
+    p[FREE_LIFE_KEY] = Math.max(0, Math.min(1, Number(p[FREE_LIFE_KEY]) || 0));
+    return p[FREE_LIFE_KEY];
+  }
+
+  function zeroObjectFreeLifeFields(obj){
+    if(!obj || typeof obj !== "object") return;
+    Object.keys(obj).forEach(k=>{
+      if(isFreeLifeKey(k)){
+        if(typeof obj[k] === "number") obj[k] = 0;
+        else if(typeof obj[k] === "boolean") obj[k] = false;
+        else if(obj[k] && typeof obj[k] === "object"){
+          if("count" in obj[k]) obj[k].count = 0;
+          if("qty" in obj[k]) obj[k].qty = 0;
+          if("uses" in obj[k]) obj[k].uses = 0;
+          if("available" in obj[k]) obj[k].available = false;
+          if("active" in obj[k]) obj[k].active = false;
+        } else {
+          obj[k] = 0;
+        }
+      }
+    });
+  }
+
+  function removeFreeLifeFromArray(arr){
+    if(!Array.isArray(arr)) return arr;
+    for(let i=arr.length-1;i>=0;i--){
+      const card = arr[i];
+      if(isFreeLifeCard(card)){
+        if(card && typeof card === "object"){
+          if(typeof card.count === "number" && card.count > 1){
+            card.count -= 1;
+          } else if(typeof card.qty === "number" && card.qty > 1){
+            card.qty -= 1;
+          } else if(typeof card.uses === "number" && card.uses > 1){
+            card.uses -= 1;
+          } else {
+            arr.splice(i,1);
+          }
+        } else {
+          arr.splice(i,1);
+        }
+      }
+    }
+    return arr;
+  }
+
+  function syncFreeLifeConsumed(p){
+    if(!p) return false;
+
+    p[FREE_LIFE_KEY] = 0;
+
+    // Common direct fields
+    ["freeLife","freeLives","life","lives"].forEach(k=>{
+      if(Object.prototype.hasOwnProperty.call(p,k)){
+        if(typeof p[k] === "number") p[k] = 0;
+        else if(typeof p[k] === "boolean") p[k] = false;
+      }
+    });
+
+    // Common object buckets
+    ["powerCards","cards","powers","lifelines","inventory"].forEach(bucketName=>{
+      const bucket = p[bucketName];
+      if(Array.isArray(bucket)){
+        removeFreeLifeFromArray(bucket);
+      } else if(bucket && typeof bucket === "object"){
+        zeroObjectFreeLifeFields(bucket);
+        Object.keys(bucket).forEach(k=>{
+          const v = bucket[k];
+          if(v && typeof v === "object" && isFreeLifeCard(v)){
+            if("count" in v) v.count = 0;
+            if("qty" in v) v.qty = 0;
+            if("uses" in v) v.uses = 0;
+            if("available" in v) v.available = false;
+            if("active" in v) v.active = false;
+          }
+        });
+      }
+    });
+
+    // Some builds may have a starter powers array/list
+    ["starterCards","activeCards","powerList"].forEach(bucketName=>{
+      if(Array.isArray(p[bucketName])) removeFreeLifeFromArray(p[bucketName]);
+    });
+
+    try{ updateUI && updateUI(); }catch(e){}
+    try{ renderPlayers && renderPlayers(); }catch(e){}
+    return true;
+  }
+
+  // Override any current free-life buttons so consumption is synced before retry.
+  document.addEventListener("pointerdown", function(e){
+    const btn = e.target && e.target.closest ? e.target.closest("#bpV102UseFreeLife,#bpV101UseFreeLife,#bpV100UseFreeLife,#bpV99UseFreeLife,#bpV98UseFreeLife,#bpV96UseFreeLife,#bpUseFreeLifeBtn") : null;
+    if(!btn) return;
+
+    const p = currentPlayer();
+    if(!p) return;
+
+    // If no Free Life remains, block use.
+    if(getFreeLifeCount(p) <= 0){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      const prompt = btn.closest("[id*='FreeLifePrompt']");
+      if(prompt) prompt.remove();
+      const cont = document.getElementById("contBtn");
+      if(cont) cont.classList.remove("hidden");
+      return;
+    }
+
+    // Let the existing retry behavior run, but force the visible card to be consumed immediately.
+    setTimeout(function(){
+      syncFreeLifeConsumed(p);
+    }, 0);
+    setTimeout(function(){
+      syncFreeLifeConsumed(p);
+    }, 80);
+    setTimeout(function(){
+      syncFreeLifeConsumed(p);
+    }, 250);
+  }, {capture:true, passive:false});
+
+  // Patch handlePostAnswer's v102ConsumeFreeLife function indirectly by ensuring any prompt click
+  // and every UI refresh keeps consumed Free Life hidden/zero.
+  ["updateUI","renderPlayers","renderPowerCards","renderSidebar"].forEach(function(name){
+    try{
+      if(typeof window[name] === "function" && !window[name].__bpV103FreeLifeSync){
+        const old = window[name];
+        window[name] = function(){
+          try{
+            if(Array.isArray(players)){
+              players.forEach(p=>{
+                if(p && p[FREE_LIFE_KEY] === 0) syncFreeLifeConsumed(p);
+              });
+            }
+          }catch(e){}
+          return old.apply(this, arguments);
+        };
+        window[name].__bpV103FreeLifeSync = true;
+        try{ eval(name + "=window[name]"); }catch(e){}
+      }
+    }catch(e){}
+  });
+
+  window.BP_FREE_LIFE_STATUS = function(){
+    try{
+      return players.map((p,i)=>({
+        index:i,
+        name:p && p.name,
+        freeLives:p ? p[FREE_LIFE_KEY] : 0,
+        powerCards:p && p.powerCards,
+        cards:p && p.cards
+      }));
+    }catch(e){return [];}
+  };
+
+  console.log("v103 Free Life consume/card sync active");
+})();
+</script>
+
 </body>
 </html>
