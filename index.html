@@ -30700,5 +30700,194 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   }
 </style>
 
+
+<!-- v94: Wild Card rule update.
+     Rule: Wild Card correct = normal advance + Wild Card bonus.
+           Wild Card wrong = no advance.
+     Keeps answer-click logic intact; applies only when the current question came from a Wild Card space. -->
+<script id="bp-v94-wild-card-reward-rule">
+(function(){
+  if(window.__bpV94WildCardRule) return;
+  window.__bpV94WildCardRule = true;
+
+  let wildCardPending = false;
+  let wildCardStartPos = null;
+  let wildCardPlayerIndex = null;
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function getPos(p){
+    return Number((p && (p.pos ?? p.sectionIdx ?? p.position ?? p.loc)) || 0);
+  }
+
+  function setPos(p, value){
+    if(!p) return;
+    const v = Math.max(0, Number(value) || 0);
+    if("pos" in p) p.pos = v;
+    if("sectionIdx" in p) p.sectionIdx = v;
+  }
+
+  function pathEnd(){
+    try{
+      if(typeof PATH !== "undefined" && Array.isArray(PATH)) return PATH.length - 1;
+    }catch(e){}
+    return 65;
+  }
+
+  function isWildCardSpace(space){
+    const txt = String(
+      (space && (space.type || space.name || space.label || space.title || space.desc || space.effect)) || ""
+    ).toLowerCase();
+    return txt.includes("wild");
+  }
+
+  function showWildToast(text){
+    try{
+      const old=document.querySelector(".bp-v94-wild-toast");
+      if(old) old.remove();
+      const el=document.createElement("div");
+      el.className="bp-v94-wild-toast";
+      el.textContent=text;
+      document.body.appendChild(el);
+      setTimeout(()=>{try{el.remove();}catch(e){}},1500);
+    }catch(e){}
+  }
+
+  // Mark the next question as a Wild Card question when the space is triggered.
+  try{
+    if(typeof window.applySpecial === "function" && !window.applySpecial.__bpV94WildCard){
+      const oldApplySpecial = window.applySpecial;
+      window.applySpecial = function(space, player){
+        try{
+          if(isWildCardSpace(space)){
+            wildCardPending = true;
+            wildCardPlayerIndex = curPlayer;
+            wildCardStartPos = getPos(player || currentPlayer());
+            try{ addLog("🎲 Wild Card: correct answer gets normal advance + bonus."); }catch(e){}
+          }
+        }catch(e){}
+        return oldApplySpecial.apply(this, arguments);
+      };
+      window.applySpecial.__bpV94WildCard = true;
+      try{ applySpecial = window.applySpecial; }catch(e){}
+    }
+  }catch(e){}
+
+  // Also catch question overlays that mention Wild Card, in case the game starts Wild Card questions elsewhere.
+  function detectWildQuestionUI(){
+    try{
+      const txt = [
+        document.getElementById("qDecade")?.textContent,
+        document.getElementById("qGenre")?.textContent,
+        document.querySelector(".q-decade-badge")?.textContent,
+        document.querySelector(".q-genre-badge")?.textContent,
+        document.getElementById("qFeedback")?.textContent
+      ].join(" ").toLowerCase();
+      if(txt.includes("wild")){
+        wildCardPending = true;
+        wildCardPlayerIndex = curPlayer;
+        wildCardStartPos = getPos(currentPlayer());
+      }
+    }catch(e){}
+  }
+
+  // Answer outcome hook. It observes result classes after the existing answer handler runs.
+  // It does not call checkAns, preventDefault, or alter button click behavior.
+  document.addEventListener("click", function(e){
+    const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+    detectWildQuestionUI();
+
+    const wasWild = wildCardPending && wildCardPlayerIndex === curPlayer;
+    if(!wasWild) return;
+
+    setTimeout(function(){
+      try{
+        const p=currentPlayer();
+        if(!p) return;
+
+        if(btn.classList.contains("correct")){
+          // Let the normal correct-answer advance happen first, then add a small Wild Card bonus.
+          const current = getPos(p);
+          const bonus = 1;
+          setPos(p, Math.min(pathEnd(), current + bonus));
+          try{ addLog("🎲 Wild Card bonus! " + (p.name || "Player") + " moves +1 extra."); }catch(e){}
+          showWildToast("🎲 WILD CARD BONUS! +1");
+          try{ draw && draw(); }catch(e){}
+          try{ updateUI && updateUI(); }catch(e){}
+          wildCardPending = false;
+          wildCardStartPos = null;
+          wildCardPlayerIndex = null;
+        } else if(btn.classList.contains("wrong")){
+          // Wrong = no advance. If any special handling moved them forward, restore start position.
+          if(wildCardStartPos !== null){
+            setPos(p, wildCardStartPos);
+            try{ draw && draw(); }catch(e){}
+            try{ updateUI && updateUI(); }catch(e){}
+          }
+          try{ addLog("🎲 Wild Card missed — no advance."); }catch(e){}
+          showWildToast("🎲 WILD CARD MISSED");
+          wildCardPending = false;
+          wildCardStartPos = null;
+          wildCardPlayerIndex = null;
+        }
+      }catch(err){}
+    }, 130);
+  }, true);
+
+  // Reset after closing question in case player skips/no decision.
+  try{
+    if(typeof window.closeQ === "function" && !window.closeQ.__bpV94WildReset){
+      const oldCloseQ = window.closeQ;
+      window.closeQ = function(){
+        const result = oldCloseQ.apply(this, arguments);
+        setTimeout(function(){
+          wildCardPending = false;
+          wildCardStartPos = null;
+          wildCardPlayerIndex = null;
+        }, 50);
+        return result;
+      };
+      window.closeQ.__bpV94WildReset = true;
+      try{ closeQ = window.closeQ; }catch(e){}
+    }
+  }catch(e){}
+
+  window.BP_WILD_CARD_STATUS=function(){
+    return {wildCardPending, wildCardStartPos, wildCardPlayerIndex};
+  };
+
+  console.log("v94 Wild Card reward rule active");
+})();
+</script>
+
+<style id="bp-v94-wild-card-css">
+  .bp-v94-wild-toast{
+    position:fixed;
+    left:50%;
+    top:42%;
+    transform:translate(-50%,-50%);
+    z-index:950;
+    padding:12px 20px;
+    border-radius:16px;
+    background:linear-gradient(135deg,rgba(192,132,252,.96),rgba(245,197,24,.96));
+    color:#080808;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.35rem;
+    letter-spacing:.12em;
+    box-shadow:0 12px 36px rgba(192,132,252,.42),0 0 50px rgba(245,197,24,.22);
+    pointer-events:none;
+    animation:bpV94WildToast 1.45s ease-out forwards;
+  }
+  @keyframes bpV94WildToast{
+    0%{opacity:0;transform:translate(-50%,-35%) scale(.72);}
+    18%{opacity:1;transform:translate(-50%,-50%) scale(1.08);}
+    78%{opacity:1;}
+    100%{opacity:0;transform:translate(-50%,-70%) scale(.94);}
+  }
+</style>
+
 </body>
 </html>
