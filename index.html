@@ -6308,21 +6308,23 @@ function checkAns(idx){
 
 function handlePostAnswer(){
   // Called only when original player got it wrong.
-  // v100 rule: Free Life must be offered BEFORE Steal.
-  document.getElementById('stealPrompt').classList.add('hidden');
-  document.getElementById('contBtn').classList.add('hidden');
+  // v102 rule: one Free Life prompt only. Free Life first, then Steal if declined.
+  const stealPromptEl = document.getElementById('stealPrompt');
+  const contBtnEl = document.getElementById('contBtn');
+  if(stealPromptEl) stealPromptEl.classList.add('hidden');
+  if(contBtnEl) contBtnEl.classList.add('hidden');
 
   const player = players[curPlayer];
 
-  function v100GetFreeLifeCount(p){
+  function v102GetFreeLifeCount(p){
     if(!p) return 0;
     if(typeof p.__bpFreeLives !== 'number') p.__bpFreeLives = 1;
     p.__bpFreeLives = Math.max(0, Math.min(1, Number(p.__bpFreeLives)||0));
     return p.__bpFreeLives;
   }
 
-  function v100ConsumeFreeLife(p){
-    if(!p || v100GetFreeLifeCount(p) <= 0) return false;
+  function v102ConsumeFreeLife(p){
+    if(!p || v102GetFreeLifeCount(p) <= 0) return false;
     p.__bpFreeLives = 0;
     try{
       if(p.powerCards && typeof p.powerCards === 'object'){
@@ -6334,86 +6336,132 @@ function handlePostAnswer(){
         if('freeLives' in p.cards) p.cards.freeLives = 0;
       }
     }catch(e){}
-    return true;
-  }
-
-  function v100RenderSameQuestionRetry(){
-    if(!curQ) return false;
-    const qa = document.getElementById('qAnswers');
-    if(!qa) return false;
-    qa.innerHTML = curQ.a.map((ans,i)=>
-      `<button class="ans-btn" type="button" data-ans-idx="${i}">${['A','B','C','D'][i]}. ${ans}</button>`
-    ).join('');
-    document.querySelectorAll('#qAnswers .ans-btn').forEach(b=>{
-      b.disabled=false;
-      b.classList.remove('correct','wrong');
-    });
-    document.getElementById('qFb').textContent='💚 Free Life used — try the same question again.';
-    document.getElementById('qFb').className='q-feedback ok';
-    document.getElementById('contBtn').classList.add('hidden');
-    document.getElementById('stealPrompt').classList.add('hidden');
-    waitingAnswer=true;
-    answeredCorrect=false;
     try{ updateUI(); }catch(e){}
     return true;
   }
 
-  function v100ContinueToStealOrReveal(){
-    document.getElementById('stealPrompt').classList.add('hidden');
-    document.getElementById('contBtn').classList.add('hidden');
+  function v102RemoveAllFreeLifePrompts(){
+    [
+      'bpFreeLifePrompt',
+      'bpV96FreeLifePrompt',
+      'bpV98FreeLifePrompt',
+      'bpV99FreeLifePrompt',
+      'bpV100FreeLifePrompt',
+      'bpV101FreeLifePrompt',
+      'bpV102FreeLifePrompt'
+    ].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.remove();
+    });
+    document.querySelectorAll(
+      '.bp-free-life-prompt,.bp-v96-free-life-prompt,.bp-v98-free-life-prompt,.bp-v99-free-life-prompt,.bp-v100-free-life-prompt,.bp-v101-free-life-prompt,.bp-v102-free-life-prompt'
+    ).forEach(el=>el.remove());
+  }
+
+  function v102RetrySameQuestion(){
+    if(!curQ) return false;
+
+    const qa = document.getElementById('qAnswers');
+    if(!qa) return false;
+
+    qa.innerHTML = curQ.a.map((ans,i)=>
+      `<button class="ans-btn" type="button" data-ans-idx="${i}">${['A','B','C','D'][i]}. ${ans}</button>`
+    ).join('');
+
+    document.querySelectorAll('#qAnswers .ans-btn').forEach(b=>{
+      b.disabled=false;
+      b.classList.remove('correct','wrong');
+      try{ b.blur(); }catch(e){}
+    });
+
+    const fb = document.getElementById('qFb') || document.getElementById('qFeedback');
+    if(fb){
+      fb.textContent='💚 Free Life used — try the same question again.';
+      fb.className='q-feedback ok';
+    }
+
+    const stealPrompt = document.getElementById('stealPrompt');
+    if(stealPrompt) stealPrompt.classList.add('hidden');
+
+    const contBtn = document.getElementById('contBtn');
+    if(contBtn) contBtn.classList.add('hidden');
+
+    waitingAnswer=true;
+    answeredCorrect=false;
+    stealMode=false;
+    stealerIdx=null;
+    try{ startTimer(); }catch(e){}
+    try{ updateUI(); }catch(e){}
+    return true;
+  }
+
+  function v102ContinueToStealOrReveal(){
+    const stealPrompt = document.getElementById('stealPrompt');
+    const contBtn = document.getElementById('contBtn');
+    if(stealPrompt) stealPrompt.classList.add('hidden');
+    if(contBtn) contBtn.classList.add('hidden');
+
     if(checkStealAvailable()){
       offerSteal();
     } else {
       revealAnswer();
-      document.getElementById('qFb').textContent=`❌ Wrong! Answer: ${curQ?curQ.a[curQ.c]:'—'}`;
-      document.getElementById('qFb').className='q-feedback bad';
-      document.getElementById('contBtn').classList.remove('hidden');
+      const fb = document.getElementById('qFb') || document.getElementById('qFeedback');
+      if(fb){
+        fb.textContent=`❌ Wrong! Answer: ${curQ?curQ.a[curQ.c]:'—'}`;
+        fb.className='q-feedback bad';
+      }
+      if(contBtn) contBtn.classList.remove('hidden');
     }
   }
 
-  // Free Life gets first refusal.
-  if(!stealMode && v100GetFreeLifeCount(player) > 0){
-    const existing = document.getElementById('bpV100FreeLifePrompt');
-    if(existing) existing.remove();
+  v102RemoveAllFreeLifePrompts();
 
+  if(!stealMode && v102GetFreeLifeCount(player) > 0){
     const prompt = document.createElement('div');
-    prompt.id = 'bpV100FreeLifePrompt';
-    prompt.className = 'bp-v100-free-life-prompt';
+    prompt.id = 'bpV102FreeLifePrompt';
+    prompt.className = 'bp-v102-free-life-prompt';
     prompt.innerHTML = `
-      <div class="bp-v100-title">💚 Use Free Life?</div>
-      <div class="bp-v100-text">Retry this same question. Your Free Life card will be used up.</div>
-      <div class="bp-v100-actions">
-        <button type="button" id="bpV100UseFreeLife" class="bp-v100-btn yes">Retry Same Question</button>
-        <button type="button" id="bpV100DeclineFreeLife" class="bp-v100-btn no">Decline — Allow Steal</button>
+      <div class="bp-v102-title">💚 Use Free Life?</div>
+      <div class="bp-v102-text">Retry this same question. Your Free Life card will be used up.</div>
+      <div class="bp-v102-actions">
+        <button type="button" id="bpV102UseFreeLife" class="bp-v102-btn yes">Retry Same Question</button>
+        <button type="button" id="bpV102DeclineFreeLife" class="bp-v102-btn no">Decline — Allow Steal</button>
       </div>
     `;
 
     const cont = document.getElementById('contBtn');
+    const box = document.querySelector('.q-box') || document.getElementById('qOverlay') || document.body;
     if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
-    else document.querySelector('.q-box').appendChild(prompt);
+    else box.appendChild(prompt);
 
-    document.getElementById('bpV100UseFreeLife').addEventListener('pointerdown', function(e){
+    const fb = document.getElementById('qFb') || document.getElementById('qFeedback');
+    if(fb){
+      fb.textContent='❌ Wrong!';
+      fb.className='q-feedback bad';
+    }
+
+    document.getElementById('bpV102UseFreeLife').addEventListener('pointerdown', function(e){
       e.preventDefault();
       e.stopPropagation();
-      if(v100ConsumeFreeLife(player)){
+      if(v102ConsumeFreeLife(player)){
         try{ addLog(`💚 ${player.name} used a Free Life and retries the same question.`); }catch(err){}
-        prompt.remove();
-        v100RenderSameQuestionRetry();
+        v102RemoveAllFreeLifePrompts();
+        v102RetrySameQuestion();
       }
     }, {passive:false});
 
-    document.getElementById('bpV100DeclineFreeLife').addEventListener('pointerdown', function(e){
+    document.getElementById('bpV102DeclineFreeLife').addEventListener('pointerdown', function(e){
       e.preventDefault();
       e.stopPropagation();
       try{ addLog(`💚 ${player.name} declined Free Life — Steal may be offered.`); }catch(err){}
-      prompt.remove();
-      v100ContinueToStealOrReveal();
+      v102RemoveAllFreeLifePrompts();
+      v102ContinueToStealOrReveal();
     }, {passive:false});
 
     return;
   }
 
-  v100ContinueToStealOrReveal();
+  v102ContinueToStealOrReveal();
 }
 
 function checkStealAvailable(){
@@ -30478,324 +30526,6 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 <!-- v86: Free Life prompt fix.
      If a player answers wrong and has a Free Life, ask immediately whether to use it. -->
-<script id="bp-v86-free-life-prompt-fix">
-(function(){
-  if(window.__bpV86FreeLifeFix) return;
-  window.__bpV86FreeLifeFix = true;
-
-  let freeLifeActive = false;
-  let suppressNextWrongPenalty = false;
-
-  function currentPlayer(){
-    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
-  }
-
-  function getFreeLifeCount(p){
-    if(!p) return 0;
-
-    const paths = [
-      ["freeLife"],
-      ["freeLives"],
-      ["life"],
-      ["lives"],
-      ["powers","freeLife"],
-      ["powers","freeLives"],
-      ["powerCards","freeLife"],
-      ["powerCards","freeLives"],
-      ["cards","freeLife"],
-      ["cards","freeLives"],
-      ["lifelines","freeLife"],
-      ["lifelines","freeLives"]
-    ];
-
-    for(const path of paths){
-      let obj = p;
-      let ok = true;
-      for(const key of path){
-        if(obj && Object.prototype.hasOwnProperty.call(obj,key)){
-          obj = obj[key];
-        } else {
-          ok = false;
-          break;
-        }
-      }
-      if(ok && Number(obj) > 0) return Number(obj);
-    }
-
-    // Some builds store cards as arrays/objects by label/type.
-    const buckets = [p.powerCards, p.cards, p.powers, p.lifelines];
-    for(const bucket of buckets){
-      if(Array.isArray(bucket)){
-        const found = bucket.find(card => {
-          const txt = String((card && (card.id || card.type || card.name || card.label)) || card || "").toLowerCase();
-          return txt.includes("free") && txt.includes("life");
-        });
-        if(found){
-          if(typeof found === "number") return found;
-          if(typeof found.count === "number") return found.count;
-          if(typeof found.qty === "number") return found.qty;
-          return 1;
-        }
-      } else if(bucket && typeof bucket === "object"){
-        for(const [k,v] of Object.entries(bucket)){
-          const key = String(k).toLowerCase();
-          if((key.includes("free") && key.includes("life")) || key === "life" || key === "lives"){
-            if(Number(v) > 0) return Number(v);
-          }
-        }
-      }
-    }
-
-    return 0;
-  }
-
-  function setNested(obj, path, val){
-    let cur = obj;
-    for(let i=0;i<path.length-1;i++){
-      if(!cur || !Object.prototype.hasOwnProperty.call(cur,path[i])) return false;
-      cur = cur[path[i]];
-    }
-    const last = path[path.length-1];
-    if(cur && Object.prototype.hasOwnProperty.call(cur,last)){
-      cur[last] = val;
-      return true;
-    }
-    return false;
-  }
-
-  function consumeFreeLife(p){
-    if(!p) return false;
-
-    const paths = [
-      ["freeLife"],["freeLives"],["life"],["lives"],
-      ["powers","freeLife"],["powers","freeLives"],
-      ["powerCards","freeLife"],["powerCards","freeLives"],
-      ["cards","freeLife"],["cards","freeLives"],
-      ["lifelines","freeLife"],["lifelines","freeLives"]
-    ];
-
-    for(const path of paths){
-      let obj=p, ok=true;
-      for(const key of path){
-        if(obj && Object.prototype.hasOwnProperty.call(obj,key)) obj=obj[key];
-        else {ok=false;break;}
-      }
-      if(ok && Number(obj)>0){
-        setNested(p,path,Number(obj)-1);
-        return true;
-      }
-    }
-
-    const buckets = [p.powerCards, p.cards, p.powers, p.lifelines];
-    for(const bucket of buckets){
-      if(bucket && typeof bucket === "object" && !Array.isArray(bucket)){
-        for(const [k,v] of Object.entries(bucket)){
-          const key = String(k).toLowerCase();
-          if(((key.includes("free") && key.includes("life")) || key === "life" || key === "lives") && Number(v)>0){
-            bucket[k]=Number(v)-1;
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
-  function setFeedback(text, ok){
-    try{
-      const fb=document.getElementById("qFeedback");
-      if(fb){
-        fb.textContent=text;
-        fb.className="q-feedback " + (ok ? "ok" : "bad");
-      }
-    }catch(e){}
-  }
-
-  function showFreeLifePrompt(){
-    if(document.getElementById("bpFreeLifePrompt")) return;
-    const p=currentPlayer();
-    if(!p || getFreeLifeCount(p)<=0) return;
-
-    const box=document.querySelector(".q-box");
-    const cont=document.getElementById("contBtn");
-    if(!box) return;
-
-    const prompt=document.createElement("div");
-    prompt.id="bpFreeLifePrompt";
-    prompt.className="bp-free-life-prompt";
-    prompt.innerHTML = `
-      <div class="bp-free-life-title">💚 Use Free Life?</div>
-      <div class="bp-free-life-text">You got it wrong, but you have a Free Life. Use it now and try another question?</div>
-      <div class="bp-free-life-actions">
-        <button type="button" id="bpUseFreeLifeBtn" class="bp-free-life-btn yes">Use Free Life</button>
-        <button type="button" id="bpSkipFreeLifeBtn" class="bp-free-life-btn no">No Thanks</button>
-      </div>
-    `;
-
-    if(cont && cont.parentNode){
-      cont.parentNode.insertBefore(prompt, cont);
-      cont.classList.add("hidden");
-    } else {
-      box.appendChild(prompt);
-    }
-
-    document.getElementById("bpUseFreeLifeBtn").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      const player=currentPlayer();
-      if(!consumeFreeLife(player)){
-        prompt.remove();
-        if(cont) cont.classList.remove("hidden");
-        return;
-      }
-
-      try{ addLog("💚 " + ((player && player.name) || "Player") + " used a Free Life!"); }catch(err){}
-      setFeedback("💚 Free Life used! Try a new question.", true);
-      prompt.remove();
-
-      // Re-enable answering and show a fresh question without moving/penalizing.
-      try{
-        waitingAnswer = true;
-        document.querySelectorAll("#qAnswers .ans-btn").forEach(b=>{
-          b.disabled=false;
-          b.classList.remove("correct","wrong");
-        });
-      }catch(err){}
-
-      // Draw another question for the same player.
-      try{
-        const p=currentPlayer();
-        const did = (typeof getPlayerDecadeId === "function") ? getPlayerDecadeId(p) :
-                    (p && p._did) ? p._did : "00s";
-        const q = (typeof getFilteredQ === "function") ? getFilteredQ(did) :
-                  (typeof getQ === "function") ? getQ(did) : null;
-
-        if(q){
-          curQ = q;
-          if(document.getElementById("qText")) document.getElementById("qText").textContent = q.q;
-          const qa=document.getElementById("qAnswers");
-          if(qa){
-            qa.innerHTML = q.a.map((ans,i)=>
-              `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
-            ).join("");
-          }
-          if(cont) cont.classList.add("hidden");
-          setFeedback("", true);
-        } else {
-          if(cont) cont.classList.remove("hidden");
-        }
-      }catch(err){
-        console.warn("Free Life new question failed", err);
-        if(cont) cont.classList.remove("hidden");
-      }
-
-      try{ updateUI && updateUI(); }catch(err){}
-    }, {passive:false});
-
-    document.getElementById("bpSkipFreeLifeBtn").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      prompt.remove();
-      if(cont) cont.classList.remove("hidden");
-      setFeedback("Incorrect.", false);
-    }, {passive:false});
-  }
-
-  // Wrap checkAns lightly: let original answer handling run, then if wrong and player has a Free Life,
-  // hide Continue and present the immediate choice.
-  try{
-    if(typeof window.checkAns === "function" && !window.checkAns.__bpV86FreeLife){
-      const oldCheckAns = window.checkAns;
-      window.checkAns = function(idx){
-        const p=currentPlayer();
-        const hadFreeLife = getFreeLifeCount(p)>0;
-        const result = oldCheckAns.apply(this, arguments);
-
-        setTimeout(function(){
-          try{
-            const btns=[...document.querySelectorAll("#qAnswers .ans-btn")];
-            const clicked=btns[idx];
-            const wasWrong = clicked && clicked.classList.contains("wrong");
-            if(hadFreeLife && wasWrong && !freeLifeActive){
-              showFreeLifePrompt();
-            }
-          }catch(e){}
-        }, 80);
-
-        return result;
-      };
-      window.checkAns.__bpV86FreeLife = true;
-      try{ checkAns = window.checkAns; }catch(e){}
-    }
-  }catch(e){}
-
-  window.BP_FREE_LIFE_STATUS=function(){
-    const p=currentPlayer();
-    return {player:p && p.name, freeLifeCount:getFreeLifeCount(p)};
-  };
-
-  console.log("v86 Free Life prompt fix active");
-})();
-</script>
-
-<style id="bp-v86-free-life-prompt-css">
-  .bp-free-life-prompt{
-    margin:10px 0 12px;
-    padding:12px;
-    border-radius:14px;
-    border:1.5px solid rgba(82,183,136,.65);
-    background:linear-gradient(135deg,rgba(82,183,136,.18),rgba(82,183,136,.06));
-    box-shadow:0 0 24px rgba(82,183,136,.18);
-    text-align:center;
-  }
-  .bp-free-life-title{
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1.25rem;
-    letter-spacing:.1em;
-    color:#52b788;
-    margin-bottom:4px;
-  }
-  .bp-free-life-text{
-    font-size:.86rem;
-    color:#dceee5;
-    line-height:1.35;
-    margin-bottom:10px;
-    font-weight:700;
-  }
-  .bp-free-life-actions{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-  }
-  .bp-free-life-btn{
-    border:0;
-    border-radius:10px;
-    padding:9px 13px;
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1rem;
-    letter-spacing:.08em;
-    cursor:pointer;
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .bp-free-life-btn.yes{
-    background:linear-gradient(135deg,#52b788,#2d9d66);
-    color:#04100a;
-    box-shadow:0 4px 14px rgba(82,183,136,.28);
-  }
-  .bp-free-life-btn.no{
-    background:rgba(255,255,255,.06);
-    color:#aaa;
-    border:1px solid rgba(255,255,255,.16);
-  }
-  @media(max-width:660px){
-    .bp-free-life-actions{flex-direction:column;}
-    .bp-free-life-btn{width:100%;}
-  }
-</style>
-
-
 <!-- v94: Wild Card rule update.
      Rule: Wild Card correct = normal advance + Wild Card bonus.
            Wild Card wrong = no advance.
@@ -30988,555 +30718,10 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 <!-- v95: Free Life limited-use fix.
      Start each player with exactly 1 Free Life and consume it once.
      This replaces the overly-broad v86 detection that could treat normal lives/other fields as unlimited Free Lives. -->
-<script id="bp-v95-free-life-limited-fix">
-(function(){
-  if(window.__bpV95FreeLifeLimitedFix) return;
-  window.__bpV95FreeLifeLimitedFix = true;
-
-  const FREE_LIFE_KEY = "__bpFreeLives";
-
-  function normalizePlayerFreeLives(){
-    try{
-      if(!Array.isArray(players)) return;
-      players.forEach(function(p){
-        if(!p) return;
-
-        // If not yet initialized, start with exactly 1.
-        if(typeof p[FREE_LIFE_KEY] !== "number"){
-          p[FREE_LIFE_KEY] = 1;
-        }
-
-        // Hard clamp. This prevents any older card/life field from being read as unlimited.
-        if(p[FREE_LIFE_KEY] > 1) p[FREE_LIFE_KEY] = 1;
-        if(p[FREE_LIFE_KEY] < 0) p[FREE_LIFE_KEY] = 0;
-
-        // Keep common display/storage fields in sync when they exist.
-        if(p.powerCards && typeof p.powerCards === "object"){
-          if("freeLife" in p.powerCards) p.powerCards.freeLife = p[FREE_LIFE_KEY];
-          if("freeLives" in p.powerCards) p.powerCards.freeLives = p[FREE_LIFE_KEY];
-        }
-        if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
-          if("freeLife" in p.cards) p.cards.freeLife = p[FREE_LIFE_KEY];
-          if("freeLives" in p.cards) p.cards.freeLives = p[FREE_LIFE_KEY];
-        }
-      });
-    }catch(e){}
-  }
-
-  function currentPlayer(){
-    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
-  }
-
-  function getFreeLifeCountStrict(p){
-    if(!p) return 0;
-    if(typeof p[FREE_LIFE_KEY] !== "number"){
-      p[FREE_LIFE_KEY] = 1;
-    }
-    if(p[FREE_LIFE_KEY] > 1) p[FREE_LIFE_KEY] = 1;
-    if(p[FREE_LIFE_KEY] < 0) p[FREE_LIFE_KEY] = 0;
-    return p[FREE_LIFE_KEY];
-  }
-
-  function consumeFreeLifeStrict(p){
-    if(!p || getFreeLifeCountStrict(p) <= 0) return false;
-    p[FREE_LIFE_KEY] = 0;
-
-    if(p.powerCards && typeof p.powerCards === "object"){
-      if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
-      if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
-    }
-    if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
-      if("freeLife" in p.cards) p.cards.freeLife = 0;
-      if("freeLives" in p.cards) p.cards.freeLives = 0;
-    }
-
-    try{ updateUI && updateUI(); }catch(e){}
-    return true;
-  }
-
-  // Reset to exactly 1 whenever a fresh game begins.
-  try{
-    if(typeof window.startGame === "function" && !window.startGame.__bpV95FreeLifeReset){
-      const oldStartGame = window.startGame;
-      window.startGame = function(){
-        const result = oldStartGame.apply(this, arguments);
-        setTimeout(function(){
-          try{
-            if(Array.isArray(players)){
-              players.forEach(function(p){
-                if(p) p[FREE_LIFE_KEY] = 1;
-              });
-            }
-            normalizePlayerFreeLives();
-            try{ updateUI && updateUI(); }catch(e){}
-          }catch(err){}
-        }, 0);
-        return result;
-      };
-      window.startGame.__bpV95FreeLifeReset = true;
-      try{ startGame = window.startGame; }catch(e){}
-    }
-  }catch(e){}
-
-  // Re-wrap checkAns after v86 so the strict Free Life count wins.
-  try{
-    if(typeof window.checkAns === "function" && !window.checkAns.__bpV95FreeLifeStrict){
-      const previousCheckAns = window.checkAns;
-      window.checkAns = function(idx){
-        normalizePlayerFreeLives();
-
-        const p = currentPlayer();
-        const hadStrictFreeLife = getFreeLifeCountStrict(p) > 0;
-
-        const result = previousCheckAns.apply(this, arguments);
-
-        setTimeout(function(){
-          try{
-            const btns=[...document.querySelectorAll("#qAnswers .ans-btn")];
-            const clicked=btns[idx];
-            const wasWrong = clicked && clicked.classList.contains("wrong");
-
-            // If wrong and no strict Free Life remains, remove any old v86 prompt that may have appeared
-            // due to broad detection of "life/lives" fields.
-            if(wasWrong && !hadStrictFreeLife){
-              const prompt=document.getElementById("bpFreeLifePrompt");
-              if(prompt) prompt.remove();
-              const cont=document.getElementById("contBtn");
-              if(cont) cont.classList.remove("hidden");
-            }
-
-            // If v86 displayed the prompt, make its Use button consume the strict limited Free Life.
-            const useBtn=document.getElementById("bpUseFreeLifeBtn");
-            if(useBtn && !useBtn.__bpV95StrictBound){
-              useBtn.__bpV95StrictBound = true;
-              useBtn.addEventListener("pointerdown", function(e){
-                const player=currentPlayer();
-                if(!consumeFreeLifeStrict(player)){
-                  e.preventDefault();
-                  e.stopImmediatePropagation();
-                  const prompt=document.getElementById("bpFreeLifePrompt");
-                  if(prompt) prompt.remove();
-                  const cont=document.getElementById("contBtn");
-                  if(cont) cont.classList.remove("hidden");
-                }
-              }, {capture:true, passive:false});
-            }
-          }catch(e){}
-        }, 20);
-
-        return result;
-      };
-      window.checkAns.__bpV95FreeLifeStrict = true;
-      try{ checkAns = window.checkAns; }catch(e){}
-    }
-  }catch(e){}
-
-  // Safety: if old v86 consumes some other field but leaves our strict count unchanged,
-  // force strict count to 0 after the Free Life prompt creates a replacement question.
-  document.addEventListener("pointerdown", function(e){
-    const btn = e.target && e.target.closest ? e.target.closest("#bpUseFreeLifeBtn") : null;
-    if(!btn) return;
-    const p=currentPlayer();
-    if(getFreeLifeCountStrict(p) <= 0){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      const prompt=document.getElementById("bpFreeLifePrompt");
-      if(prompt) prompt.remove();
-      const cont=document.getElementById("contBtn");
-      if(cont) cont.classList.remove("hidden");
-      return;
-    }
-    consumeFreeLifeStrict(p);
-  }, {capture:true, passive:false});
-
-  // Keep UI in sync after common updates.
-  ["updateUI","renderPlayers"].forEach(function(name){
-    try{
-      if(typeof window[name] === "function" && !window[name].__bpV95FreeLifeSync){
-        const old = window[name];
-        window[name] = function(){
-          normalizePlayerFreeLives();
-          return old.apply(this, arguments);
-        };
-        window[name].__bpV95FreeLifeSync = true;
-        try{ eval(name + "=window[name]"); }catch(e){}
-      }
-    }catch(e){}
-  });
-
-  normalizePlayerFreeLives();
-
-  window.BP_FREE_LIFE_STATUS = function(){
-    normalizePlayerFreeLives();
-    try{
-      return players.map(function(p,i){
-        return {index:i, name:p && p.name, freeLives:p ? p[FREE_LIFE_KEY] : 0};
-      });
-    }catch(e){
-      const p=currentPlayer();
-      return {player:p && p.name, freeLives:getFreeLifeCountStrict(p)};
-    }
-  };
-
-  console.log("v95 Free Life limited to one active");
-})();
-</script>
-
-
 <!-- v96: Free Life gets priority before Steal.
      If wrong + Free Life available: offer Free Life first.
      If declined: then Steal can appear.
      If used: consume Free Life and give a new question. -->
-<script id="bp-v96-free-life-before-steal">
-(function(){
-  if(window.__bpV96FreeLifeBeforeSteal) return;
-  window.__bpV96FreeLifeBeforeSteal = true;
-
-  const FREE_LIFE_KEY = "__bpFreeLives";
-  let pendingStealNodes = [];
-  let suppressStealUntilDecision = false;
-
-  function currentPlayer(){
-    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
-  }
-
-  function getFreeLifeCount(p){
-    if(!p) return 0;
-    if(typeof p[FREE_LIFE_KEY] !== "number") p[FREE_LIFE_KEY] = 1;
-    if(p[FREE_LIFE_KEY] > 1) p[FREE_LIFE_KEY] = 1;
-    if(p[FREE_LIFE_KEY] < 0) p[FREE_LIFE_KEY] = 0;
-    return p[FREE_LIFE_KEY];
-  }
-
-  function consumeFreeLife(p){
-    if(!p || getFreeLifeCount(p) <= 0) return false;
-    p[FREE_LIFE_KEY] = 0;
-    try{
-      if(p.powerCards && typeof p.powerCards === "object"){
-        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
-        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
-      }
-      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
-        if("freeLife" in p.cards) p.cards.freeLife = 0;
-        if("freeLives" in p.cards) p.cards.freeLives = 0;
-      }
-    }catch(e){}
-    try{ updateUI && updateUI(); }catch(e){}
-    return true;
-  }
-
-  function setFeedback(text, ok){
-    try{
-      const fb = document.getElementById("qFeedback");
-      if(fb){
-        fb.textContent = text || "";
-        fb.className = "q-feedback " + (ok ? "ok" : "bad");
-      }
-    }catch(e){}
-  }
-
-  function stealCandidates(){
-    const selectors = [
-      "#stealOverlay",
-      ".steal-overlay",
-      "#stealBox",
-      ".steal-box",
-      ".steal-panel",
-      ".steal-modal",
-      "#stealPrompt",
-      ".steal-prompt",
-      "[id*='steal' i]",
-      "[class*='steal' i]"
-    ];
-    let nodes = [];
-    selectors.forEach(sel=>{
-      try{ nodes = nodes.concat([...document.querySelectorAll(sel)]); }catch(e){}
-    });
-    // De-dupe and avoid hiding our own prompt if naming ever overlaps.
-    return [...new Set(nodes)].filter(el => el && el.id !== "bpV96FreeLifePrompt");
-  }
-
-  function hideStealTemporarily(){
-    if(!suppressStealUntilDecision) return;
-    pendingStealNodes = [];
-    stealCandidates().forEach(el=>{
-      try{
-        if(el.closest && el.closest("#bpV96FreeLifePrompt")) return;
-        if(el.style.display !== "none" && !el.classList.contains("hidden")){
-          pendingStealNodes.push(el);
-        }
-        el.dataset.bpV96HiddenSteal = "1";
-        el.style.display = "none";
-        el.classList.add("bp-v96-steal-hidden");
-      }catch(e){}
-    });
-  }
-
-  function revealSteal(){
-    suppressStealUntilDecision = false;
-    try{
-      document.querySelectorAll(".bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").forEach(el=>{
-        el.classList.remove("bp-v96-steal-hidden");
-        el.style.display = "";
-        delete el.dataset.bpV96HiddenSteal;
-      });
-    }catch(e){}
-    pendingStealNodes = [];
-  }
-
-  function closeQuestionNormally(){
-    try{
-      const cont = document.getElementById("contBtn");
-      if(cont) cont.classList.remove("hidden");
-    }catch(e){}
-  }
-
-  function renderAnswersForQuestion(q){
-    const qa = document.getElementById("qAnswers");
-    if(!qa || !q || !Array.isArray(q.a)) return;
-    qa.innerHTML = q.a.map((ans,i)=>
-      `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
-    ).join("");
-  }
-
-  function showNewQuestionSameTurn(){
-    try{
-      const p = currentPlayer();
-      let did = "00s";
-      try{
-        if(typeof getPlayerDecadeId === "function") did = getPlayerDecadeId(p);
-        else if(p && p._did) did = p._did;
-      }catch(e){}
-      const q = (typeof getFilteredQ === "function") ? getFilteredQ(did) :
-                (typeof getQ === "function") ? getQ(did) : null;
-
-      if(q){
-        curQ = q;
-        const qText = document.getElementById("qText");
-        if(qText) qText.textContent = q.q;
-        renderAnswersForQuestion(q);
-
-        try{
-          waitingAnswer = true;
-          document.querySelectorAll("#qAnswers .ans-btn").forEach(b=>{
-            b.disabled = false;
-            b.classList.remove("correct","wrong");
-          });
-        }catch(e){}
-
-        const cont = document.getElementById("contBtn");
-        if(cont) cont.classList.add("hidden");
-        setFeedback("", true);
-        return true;
-      }
-    }catch(e){
-      console.warn("v96 Free Life replacement question failed", e);
-    }
-    return false;
-  }
-
-  function showPrompt(){
-    if(document.getElementById("bpV96FreeLifePrompt")) return;
-    const p = currentPlayer();
-    if(!p || getFreeLifeCount(p) <= 0) return;
-
-    suppressStealUntilDecision = true;
-    hideStealTemporarily();
-
-    // Remove older prompt if v86 created one.
-    try{
-      const old = document.getElementById("bpFreeLifePrompt");
-      if(old) old.remove();
-    }catch(e){}
-
-    const box = document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
-    const cont = document.getElementById("contBtn");
-    if(cont) cont.classList.add("hidden");
-
-    const prompt = document.createElement("div");
-    prompt.id = "bpV96FreeLifePrompt";
-    prompt.className = "bp-v96-free-life-prompt";
-    prompt.innerHTML = `
-      <div class="bp-v96-free-life-title">💚 Use Free Life?</div>
-      <div class="bp-v96-free-life-text">You missed it, but you still have 1 Free Life. Use it now for a new question?</div>
-      <div class="bp-v96-free-life-actions">
-        <button type="button" id="bpV96UseFreeLife" class="bp-v96-free-life-btn yes">Use Free Life</button>
-        <button type="button" id="bpV96DeclineFreeLife" class="bp-v96-free-life-btn no">No — Offer Steal</button>
-      </div>
-    `;
-
-    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
-    else box.appendChild(prompt);
-
-    document.getElementById("bpV96UseFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      const player = currentPlayer();
-      if(!consumeFreeLife(player)){
-        prompt.remove();
-        revealSteal();
-        closeQuestionNormally();
-        return;
-      }
-
-      try{ addLog("💚 " + ((player && player.name) || "Player") + " used a Free Life before Steal."); }catch(err){}
-      prompt.remove();
-      suppressStealUntilDecision = false;
-
-      // Do NOT reveal steal, because Free Life replaces the miss.
-      document.querySelectorAll(".bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").forEach(el=>{
-        try{ el.remove(); }catch(err){ el.style.display="none"; }
-      });
-
-      setFeedback("💚 Free Life used! Try a new question.", true);
-      const ok = showNewQuestionSameTurn();
-      if(!ok) closeQuestionNormally();
-    }, {passive:false});
-
-    document.getElementById("bpV96DeclineFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      prompt.remove();
-      setFeedback("Free Life declined — Steal is available.", false);
-      revealSteal();
-
-      // If no steal UI was created by the original flow, let the normal continue button show.
-      setTimeout(function(){
-        const anyVisibleSteal = stealCandidates().some(el=>{
-          try{
-            const cs = getComputedStyle(el);
-            return cs.display !== "none" && cs.visibility !== "hidden" && !el.classList.contains("hidden");
-          }catch(e){ return false; }
-        });
-        if(!anyVisibleSteal) closeQuestionNormally();
-      }, 40);
-    }, {passive:false});
-  }
-
-  // Monitor wrong answer result after existing answer handler. If Free Life exists, intercept before Steal.
-  document.addEventListener("click", function(e){
-    const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
-    if(!btn) return;
-
-    const p = currentPlayer();
-    const hadFreeLife = getFreeLifeCount(p) > 0;
-
-    setTimeout(function(){
-      try{
-        const wasWrong = btn.classList.contains("wrong");
-        if(wasWrong && hadFreeLife && getFreeLifeCount(currentPlayer()) > 0){
-          suppressStealUntilDecision = true;
-          hideStealTemporarily();
-          showPrompt();
-        }
-      }catch(err){}
-    }, 35);
-  }, true);
-
-  // Also catch iPhone/pointerdown path, because v64 uses pointerdown answer handling.
-  document.addEventListener("pointerdown", function(e){
-    const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
-    if(!btn) return;
-
-    const p = currentPlayer();
-    const hadFreeLife = getFreeLifeCount(p) > 0;
-
-    setTimeout(function(){
-      try{
-        const wasWrong = btn.classList.contains("wrong");
-        if(wasWrong && hadFreeLife && getFreeLifeCount(currentPlayer()) > 0){
-          suppressStealUntilDecision = true;
-          hideStealTemporarily();
-          showPrompt();
-        }
-      }catch(err){}
-    }, 65);
-  }, true);
-
-  // If steal UI appears while Free Life decision is pending, hide it until decline.
-  try{
-    new MutationObserver(function(){
-      if(suppressStealUntilDecision) hideStealTemporarily();
-    }).observe(document.body, {childList:true, subtree:true});
-  }catch(e){}
-
-  window.BP_FREE_LIFE_ORDER_STATUS = function(){
-    return {
-      suppressStealUntilDecision,
-      currentPlayer: currentPlayer() && currentPlayer().name,
-      freeLives: getFreeLifeCount(currentPlayer()),
-      hiddenStealNodes: document.querySelectorAll(".bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").length
-    };
-  };
-
-  console.log("v96 Free Life before Steal active");
-})();
-</script>
-
-<style id="bp-v96-free-life-before-steal-css">
-  .bp-v96-free-life-prompt{
-    margin:10px 0 12px;
-    padding:13px;
-    border-radius:15px;
-    border:1.5px solid rgba(82,183,136,.72);
-    background:linear-gradient(135deg,rgba(82,183,136,.20),rgba(82,183,136,.07));
-    box-shadow:0 0 26px rgba(82,183,136,.20);
-    text-align:center;
-  }
-  .bp-v96-free-life-title{
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1.28rem;
-    letter-spacing:.1em;
-    color:#52b788;
-    margin-bottom:4px;
-  }
-  .bp-v96-free-life-text{
-    font-size:.88rem;
-    color:#dceee5;
-    line-height:1.35;
-    margin-bottom:10px;
-    font-weight:800;
-  }
-  .bp-v96-free-life-actions{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-  }
-  .bp-v96-free-life-btn{
-    border:0;
-    border-radius:10px;
-    padding:9px 13px;
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1rem;
-    letter-spacing:.08em;
-    cursor:pointer;
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .bp-v96-free-life-btn.yes{
-    background:linear-gradient(135deg,#52b788,#2d9d66);
-    color:#04100a;
-    box-shadow:0 4px 14px rgba(82,183,136,.28);
-  }
-  .bp-v96-free-life-btn.no{
-    background:rgba(255,255,255,.06);
-    color:#f5c518;
-    border:1px solid rgba(245,197,24,.42);
-  }
-  .bp-v96-steal-hidden{
-    display:none!important;
-  }
-  @media(max-width:660px){
-    .bp-v96-free-life-actions{flex-direction:column;}
-    .bp-v96-free-life-btn{width:100%;}
-  }
-</style>
-
-
 <!-- v97: Solo Challenge Mode.
      In 1-player mode, max 3 wrong answers.
      Free Life is offered first and prevents the miss from counting if used. -->
@@ -31885,1014 +31070,64 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 
 <!-- v98: Strict Free Life priority over Steal.
      Steal is blocked while a wrong-answer Free Life decision is pending. -->
-<script id="bp-v98-free-life-blocks-steal-first">
-(function(){
-  if(window.__bpV98FreeLifeBlocksSteal) return;
-  window.__bpV98FreeLifeBlocksSteal = true;
-
-  const FREE_LIFE_KEY = "__bpFreeLives";
-  let freeLifeDecisionPending = false;
-  let wrongAnswerPending = false;
-
-  function currentPlayer(){
-    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
-  }
-
-  function freeLivesLeft(){
-    const p = currentPlayer();
-    if(!p) return 0;
-    if(typeof p[FREE_LIFE_KEY] !== "number") p[FREE_LIFE_KEY] = 1;
-    p[FREE_LIFE_KEY] = Math.max(0, Math.min(1, Number(p[FREE_LIFE_KEY]) || 0));
-    return p[FREE_LIFE_KEY];
-  }
-
-  function consumeFreeLife(){
-    const p=currentPlayer();
-    if(!p || freeLivesLeft() <= 0) return false;
-    p[FREE_LIFE_KEY] = 0;
-    try{
-      if(p.powerCards && typeof p.powerCards === "object"){
-        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
-        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
-      }
-      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
-        if("freeLife" in p.cards) p.cards.freeLife = 0;
-        if("freeLives" in p.cards) p.cards.freeLives = 0;
-      }
-    }catch(e){}
-    try{ updateUI && updateUI(); }catch(e){}
-    return true;
-  }
-
-  function removeOldFreeLifePrompts(){
-    try{
-      ["bpFreeLifePrompt","bpV96FreeLifePrompt","bpV98FreeLifePrompt"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el) el.remove();
-      });
-    }catch(e){}
-  }
-
-  function hideStealUI(){
-    try{
-      document.querySelectorAll(
-        "[id*='steal' i],[class*='steal' i]"
-      ).forEach(function(el){
-        if(el.id === "bpV98FreeLifePrompt") return;
-        if(el.closest && el.closest("#bpV98FreeLifePrompt")) return;
-        el.classList.add("bp-v98-steal-blocked");
-        el.style.display = "none";
-      });
-    }catch(e){}
-  }
-
-  function revealStealUI(){
-    try{
-      document.querySelectorAll(".bp-v98-steal-blocked").forEach(function(el){
-        el.classList.remove("bp-v98-steal-blocked");
-        el.style.display = "";
-      });
-    }catch(e){}
-  }
-
-  function setFeedback(text, ok){
-    try{
-      const fb=document.getElementById("qFeedback");
-      if(fb){
-        fb.textContent=text || "";
-        fb.className="q-feedback " + (ok ? "ok" : "bad");
-      }
-    }catch(e){}
-  }
-
-  function renderAnswers(q){
-    const qa=document.getElementById("qAnswers");
-    if(!qa || !q || !Array.isArray(q.a)) return;
-    qa.innerHTML = q.a.map((ans,i)=>
-      `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
-    ).join("");
-  }
-
-  function newQuestionSameTurn(){
-    try{
-      const p=currentPlayer();
-      let did="00s";
-      try{
-        if(typeof getPlayerDecadeId === "function") did = getPlayerDecadeId(p);
-        else if(p && p._did) did = p._did;
-      }catch(e){}
-      const q = (typeof getFilteredQ === "function") ? getFilteredQ(did) :
-                (typeof getQ === "function") ? getQ(did) : null;
-      if(!q) return false;
-
-      curQ = q;
-      const qt=document.getElementById("qText");
-      if(qt) qt.textContent=q.q;
-      renderAnswers(q);
-      try{ waitingAnswer = true; }catch(e){}
-      document.querySelectorAll("#qAnswers .ans-btn").forEach(b=>{
-        b.disabled=false;
-        b.classList.remove("correct","wrong");
-      });
-      const cont=document.getElementById("contBtn");
-      if(cont) cont.classList.add("hidden");
-      setFeedback("", true);
-      return true;
-    }catch(e){
-      console.warn("v98 Free Life new question failed", e);
-      return false;
-    }
-  }
-
-  function showPrompt(){
-    if(document.getElementById("bpV98FreeLifePrompt")) return;
-    if(freeLivesLeft() <= 0) return;
-
-    freeLifeDecisionPending = true;
-    hideStealUI();
-    removeOldFreeLifePrompts();
-
-    const box=document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
-    const cont=document.getElementById("contBtn");
-    if(cont) cont.classList.add("hidden");
-
-    const prompt=document.createElement("div");
-    prompt.id="bpV98FreeLifePrompt";
-    prompt.className="bp-v98-free-life-prompt";
-    prompt.innerHTML = `
-      <div class="bp-v98-title">💚 Use Free Life?</div>
-      <div class="bp-v98-text">You missed it. Use your Free Life now for a new question, or decline to allow Steal.</div>
-      <div class="bp-v98-actions">
-        <button type="button" id="bpV98UseFreeLife" class="bp-v98-btn yes">Use Free Life</button>
-        <button type="button" id="bpV98DeclineFreeLife" class="bp-v98-btn no">Decline — Allow Steal</button>
-      </div>
-    `;
-
-    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
-    else box.appendChild(prompt);
-
-    document.getElementById("bpV98UseFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      if(consumeFreeLife()){
-        try{ addLog("💚 Free Life used before Steal."); }catch(err){}
-        freeLifeDecisionPending = false;
-        wrongAnswerPending = false;
-        prompt.remove();
-
-        // Remove any steal UI that was created for this miss.
-        hideStealUI();
-        setTimeout(function(){
-          try{ document.querySelectorAll(".bp-v98-steal-blocked").forEach(el=>el.remove()); }catch(err){}
-        }, 10);
-
-        setFeedback("💚 Free Life used! Try a new question.", true);
-        if(!newQuestionSameTurn()){
-          const cont=document.getElementById("contBtn");
-          if(cont) cont.classList.remove("hidden");
-        }
-      }
-    }, {passive:false});
-
-    document.getElementById("bpV98DeclineFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      try{ addLog("💚 Free Life declined. Steal may be offered."); }catch(err){}
-      prompt.remove();
-      freeLifeDecisionPending = false;
-      wrongAnswerPending = false;
-      setFeedback("Free Life declined — Steal is available.", false);
-      revealStealUI();
-
-      // If the original steal flow was blocked before creating UI, trigger it now when possible.
-      try{
-        if(typeof showStealPrompt === "function") showStealPrompt();
-        else if(typeof offerSteal === "function") offerSteal();
-        else if(typeof promptSteal === "function") promptSteal();
-        else {
-          const cont=document.getElementById("contBtn");
-          if(cont) cont.classList.remove("hidden");
-        }
-      }catch(err){
-        const cont=document.getElementById("contBtn");
-        if(cont) cont.classList.remove("hidden");
-      }
-    }, {passive:false});
-  }
-
-  // Block steal availability while Free Life decision is pending.
-  try{
-    if(typeof window.checkStealAvailable === "function" && !window.checkStealAvailable.__bpV98){
-      const oldCheckStealAvailable = window.checkStealAvailable;
-      window.checkStealAvailable = function(){
-        if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
-          setTimeout(showPrompt, 0);
-          return false;
-        }
-        return oldCheckStealAvailable.apply(this, arguments);
-      };
-      window.checkStealAvailable.__bpV98 = true;
-      try{ checkStealAvailable = window.checkStealAvailable; }catch(e){}
-    }
-  }catch(e){}
-
-  // Block best stealer while pending, because some versions check this directly.
-  try{
-    if(typeof window.findBestStealer === "function" && !window.findBestStealer.__bpV98){
-      const oldFindBestStealer = window.findBestStealer;
-      window.findBestStealer = function(){
-        if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
-          setTimeout(showPrompt, 0);
-          return null;
-        }
-        return oldFindBestStealer.apply(this, arguments);
-      };
-      window.findBestStealer.__bpV98 = true;
-      try{ findBestStealer = window.findBestStealer; }catch(e){}
-    }
-  }catch(e){}
-
-  // Block common steal prompt functions if they exist.
-  ["showStealPrompt","offerSteal","promptSteal","openStealPrompt"].forEach(function(name){
-    try{
-      if(typeof window[name] === "function" && !window[name].__bpV98){
-        const old = window[name];
-        window[name] = function(){
-          if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
-            setTimeout(showPrompt, 0);
-            return;
-          }
-          return old.apply(this, arguments);
-        };
-        window[name].__bpV98 = true;
-        try{ eval(name + "=window[name]"); }catch(e){}
-      }
-    }catch(e){}
-  });
-
-  // Detect wrong answer immediately after the stable answer handler marks the clicked button.
-  function observeAnswer(btn){
-    if(!btn) return;
-    setTimeout(function(){
-      try{
-        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
-          wrongAnswerPending = true;
-          freeLifeDecisionPending = true;
-          hideStealUI();
-          showPrompt();
-        }
-      }catch(e){}
-    }, 20);
-    setTimeout(function(){
-      try{
-        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
-          wrongAnswerPending = true;
-          freeLifeDecisionPending = true;
-          hideStealUI();
-          showPrompt();
-        }
-      }catch(e){}
-    }, 90);
-  }
-
-  document.addEventListener("pointerdown", function(e){
-    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
-    if(!btn) return;
-    observeAnswer(btn);
-  }, true);
-
-  document.addEventListener("click", function(e){
-    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
-    if(!btn) return;
-    observeAnswer(btn);
-  }, true);
-
-  // If any steal UI appears while the Free Life prompt is pending, hide it.
-  try{
-    new MutationObserver(function(){
-      if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
-        hideStealUI();
-        showPrompt();
-      }
-    }).observe(document.body, {childList:true, subtree:true});
-  }catch(e){}
-
-  window.BP_FREE_LIFE_STEAL_PRIORITY_STATUS = function(){
-    return {
-      freeLivesLeft: freeLivesLeft(),
-      freeLifeDecisionPending,
-      wrongAnswerPending,
-      promptVisible: !!document.getElementById("bpV98FreeLifePrompt"),
-      hiddenStealNodes: document.querySelectorAll(".bp-v98-steal-blocked").length
-    };
-  };
-
-  console.log("v98 strict Free Life before Steal active");
-})();
-</script>
-
-<style id="bp-v98-free-life-priority-css">
-  .bp-v98-free-life-prompt{
-    margin:10px 0 12px;
-    padding:13px;
-    border-radius:15px;
-    border:1.5px solid rgba(82,183,136,.72);
-    background:linear-gradient(135deg,rgba(82,183,136,.22),rgba(82,183,136,.08));
-    box-shadow:0 0 28px rgba(82,183,136,.22);
-    text-align:center;
-  }
-  .bp-v98-title{
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1.28rem;
-    letter-spacing:.1em;
-    color:#52b788;
-    margin-bottom:4px;
-  }
-  .bp-v98-text{
-    font-size:.88rem;
-    color:#dceee5;
-    line-height:1.35;
-    margin-bottom:10px;
-    font-weight:800;
-  }
-  .bp-v98-actions{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-  }
-  .bp-v98-btn{
-    border:0;
-    border-radius:10px;
-    padding:9px 13px;
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1rem;
-    letter-spacing:.08em;
-    cursor:pointer;
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .bp-v98-btn.yes{
-    background:linear-gradient(135deg,#52b788,#2d9d66);
-    color:#04100a;
-    box-shadow:0 4px 14px rgba(82,183,136,.28);
-  }
-  .bp-v98-btn.no{
-    background:rgba(255,255,255,.06);
-    color:#f5c518;
-    border:1px solid rgba(245,197,24,.42);
-  }
-  .bp-v98-steal-blocked{
-    display:none!important;
-  }
-  @media(max-width:660px){
-    .bp-v98-actions{flex-direction:column;}
-    .bp-v98-btn{width:100%;}
-  }
-</style>
-
-
 <!-- v99: Free Life same-question retry.
      Updated rule: Use Free Life = retry the SAME question, then consume the Free Life card.
      Steal remains blocked unless Free Life is declined. -->
-<script id="bp-v99-free-life-same-question-retry">
-(function(){
-  if(window.__bpV99FreeLifeSameQuestion) return;
-  window.__bpV99FreeLifeSameQuestion = true;
-
-  const FREE_LIFE_KEY = "__bpFreeLives";
-  let savedQuestion = null;
-  let savedAnswers = null;
-
-  function currentPlayer(){
-    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
-  }
-
-  function freeLivesLeft(){
-    const p = currentPlayer();
-    if(!p) return 0;
-    if(typeof p[FREE_LIFE_KEY] !== "number") p[FREE_LIFE_KEY] = 1;
-    p[FREE_LIFE_KEY] = Math.max(0, Math.min(1, Number(p[FREE_LIFE_KEY]) || 0));
-    return p[FREE_LIFE_KEY];
-  }
-
-  function consumeFreeLife(){
-    const p = currentPlayer();
-    if(!p || freeLivesLeft() <= 0) return false;
-
-    p[FREE_LIFE_KEY] = 0;
-
-    try{
-      if(p.powerCards && typeof p.powerCards === "object"){
-        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
-        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
-      }
-      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
-        if("freeLife" in p.cards) p.cards.freeLife = 0;
-        if("freeLives" in p.cards) p.cards.freeLives = 0;
-      }
-    }catch(e){}
-
-    try{ updateUI && updateUI(); }catch(e){}
-    return true;
-  }
-
-  function setFeedback(text, ok){
-    try{
-      const fb=document.getElementById("qFeedback");
-      if(fb){
-        fb.textContent=text || "";
-        fb.className="q-feedback " + (ok ? "ok" : "bad");
-      }
-    }catch(e){}
-  }
-
-  function saveCurrentQuestion(){
-    try{
-      savedQuestion = {
-        qText: document.getElementById("qText")?.textContent || "",
-        curQ: (typeof curQ !== "undefined" && curQ) ? JSON.parse(JSON.stringify(curQ)) : null
-      };
-
-      savedAnswers = [...document.querySelectorAll("#qAnswers .ans-btn")].map((btn, i) => ({
-        html: btn.innerHTML,
-        text: btn.textContent,
-        idx: btn.getAttribute("data-ans-idx") ?? String(i)
-      }));
-    }catch(e){
-      savedQuestion = null;
-      savedAnswers = null;
-    }
-  }
-
-  function restoreSameQuestionForRetry(){
-    try{
-      const qText = document.getElementById("qText");
-      if(savedQuestion && savedQuestion.qText && qText){
-        qText.textContent = savedQuestion.qText;
-      }
-
-      if(savedQuestion && savedQuestion.curQ && typeof curQ !== "undefined"){
-        curQ = savedQuestion.curQ;
-      }
-
-      const qa = document.getElementById("qAnswers");
-      if(qa && savedAnswers && savedAnswers.length){
-        qa.innerHTML = savedAnswers.map((a, i)=>
-          `<button class="ans-btn" type="button" data-ans-idx="${a.idx}">${a.html}</button>`
-        ).join("");
-      } else {
-        // Fallback: just re-enable existing buttons.
-        document.querySelectorAll("#qAnswers .ans-btn").forEach(btn=>{
-          btn.disabled = false;
-          btn.classList.remove("correct","wrong");
-        });
-      }
-
-      document.querySelectorAll("#qAnswers .ans-btn").forEach(btn=>{
-        btn.disabled = false;
-        btn.classList.remove("correct","wrong");
-        btn.blur && btn.blur();
-      });
-
-      try{ waitingAnswer = true; }catch(e){}
-
-      const cont = document.getElementById("contBtn");
-      if(cont) cont.classList.add("hidden");
-
-      setFeedback("💚 Free Life used — try the same question again.", true);
-      return true;
-    }catch(e){
-      console.warn("v99 same-question retry failed", e);
-      return false;
-    }
-  }
-
-  function removePrompts(){
-    ["bpV98FreeLifePrompt","bpV96FreeLifePrompt","bpFreeLifePrompt","bpV99FreeLifePrompt"].forEach(id=>{
-      try{
-        const el=document.getElementById(id);
-        if(el) el.remove();
-      }catch(e){}
-    });
-  }
-
-  function hideStealUI(){
-    try{
-      document.querySelectorAll("[id*='steal' i],[class*='steal' i]").forEach(el=>{
-        if(el.closest && el.closest("#bpV99FreeLifePrompt")) return;
-        el.classList.add("bp-v99-steal-blocked");
-        el.style.display = "none";
-      });
-    }catch(e){}
-  }
-
-  function showPrompt(){
-    if(document.getElementById("bpV99FreeLifePrompt")) return;
-    if(freeLivesLeft() <= 0) return;
-
-    hideStealUI();
-    removePrompts();
-
-    const box = document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
-    const cont = document.getElementById("contBtn");
-    if(cont) cont.classList.add("hidden");
-
-    const prompt = document.createElement("div");
-    prompt.id = "bpV99FreeLifePrompt";
-    prompt.className = "bp-v99-free-life-prompt";
-    prompt.innerHTML = `
-      <div class="bp-v99-title">💚 Use Free Life?</div>
-      <div class="bp-v99-text">Use your Free Life to try this same question again. The Free Life card will be used up.</div>
-      <div class="bp-v99-actions">
-        <button type="button" id="bpV99UseFreeLife" class="bp-v99-btn yes">Retry Same Question</button>
-        <button type="button" id="bpV99DeclineFreeLife" class="bp-v99-btn no">Decline — Allow Steal</button>
-      </div>
-    `;
-
-    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
-    else box.appendChild(prompt);
-
-    document.getElementById("bpV99UseFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      if(!consumeFreeLife()){
-        prompt.remove();
-        if(cont) cont.classList.remove("hidden");
-        return;
-      }
-
-      try{ addLog("💚 Free Life used — retrying the same question."); }catch(err){}
-      prompt.remove();
-
-      // Remove any steal prompt created from the miss.
-      try{
-        document.querySelectorAll(".bp-v99-steal-blocked,.bp-v98-steal-blocked,[data-bp-v96-hidden-steal='1']").forEach(el=>{
-          try{ el.remove(); }catch(err){ el.style.display="none"; }
-        });
-      }catch(err){}
-
-      restoreSameQuestionForRetry();
-    }, {passive:false});
-
-    document.getElementById("bpV99DeclineFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      prompt.remove();
-      setFeedback("Free Life declined — Steal is available.", false);
-
-      // Let existing v98/v96 decline buttons or steal flow handle it when possible.
-      try{
-        document.querySelectorAll(".bp-v99-steal-blocked,.bp-v98-steal-blocked,.bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").forEach(el=>{
-          el.classList.remove("bp-v99-steal-blocked","bp-v98-steal-blocked","bp-v96-steal-hidden");
-          el.style.display = "";
-          delete el.dataset.bpV96HiddenSteal;
-        });
-      }catch(err){}
-
-      try{
-        if(typeof showStealPrompt === "function") showStealPrompt();
-        else if(typeof offerSteal === "function") offerSteal();
-        else if(typeof promptSteal === "function") promptSteal();
-        else {
-          const c=document.getElementById("contBtn");
-          if(c) c.classList.remove("hidden");
-        }
-      }catch(err){
-        const c=document.getElementById("contBtn");
-        if(c) c.classList.remove("hidden");
-      }
-    }, {passive:false});
-  }
-
-  function observeAnswer(btn){
-    if(!btn) return;
-
-    // Capture the current question before the original answer flow changes button state.
-    saveCurrentQuestion();
-
-    setTimeout(function(){
-      try{
-        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
-          hideStealUI();
-          showPrompt();
-        }
-      }catch(e){}
-    }, 15);
-
-    setTimeout(function(){
-      try{
-        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
-          hideStealUI();
-          showPrompt();
-        }
-      }catch(e){}
-    }, 90);
-  }
-
-  document.addEventListener("pointerdown", function(e){
-    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
-    if(!btn) return;
-    observeAnswer(btn);
-  }, true);
-
-  document.addEventListener("click", function(e){
-    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
-    if(!btn) return;
-    observeAnswer(btn);
-  }, true);
-
-  // Override older v98 Use button if it still appears first: convert it to same-question retry.
-  document.addEventListener("pointerdown", function(e){
-    const btn=e.target && e.target.closest ? e.target.closest("#bpV98UseFreeLife,#bpV96UseFreeLife,#bpUseFreeLifeBtn") : null;
-    if(!btn) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-
-    if(consumeFreeLife()){
-      removePrompts();
-      try{ addLog("💚 Free Life used — retrying the same question."); }catch(err){}
-      restoreSameQuestionForRetry();
-    }
-  }, {capture:true, passive:false});
-
-  window.BP_FREE_LIFE_RETRY_STATUS = function(){
-    return {
-      freeLivesLeft: freeLivesLeft(),
-      savedQuestionText: savedQuestion && savedQuestion.qText,
-      savedAnswerCount: savedAnswers ? savedAnswers.length : 0
-    };
-  };
-
-  console.log("v99 Free Life same-question retry active");
-})();
-</script>
-
-<style id="bp-v99-free-life-css">
-  .bp-v99-free-life-prompt{
-    margin:10px 0 12px;
-    padding:13px;
-    border-radius:15px;
-    border:1.5px solid rgba(82,183,136,.72);
-    background:linear-gradient(135deg,rgba(82,183,136,.22),rgba(82,183,136,.08));
-    box-shadow:0 0 28px rgba(82,183,136,.22);
-    text-align:center;
-  }
-  .bp-v99-title{
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1.28rem;
-    letter-spacing:.1em;
-    color:#52b788;
-    margin-bottom:4px;
-  }
-  .bp-v99-text{
-    font-size:.88rem;
-    color:#dceee5;
-    line-height:1.35;
-    margin-bottom:10px;
-    font-weight:800;
-  }
-  .bp-v99-actions{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-  }
-  .bp-v99-btn{
-    border:0;
-    border-radius:10px;
-    padding:9px 13px;
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1rem;
-    letter-spacing:.08em;
-    cursor:pointer;
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .bp-v99-btn.yes{
-    background:linear-gradient(135deg,#52b788,#2d9d66);
-    color:#04100a;
-    box-shadow:0 4px 14px rgba(82,183,136,.28);
-  }
-  .bp-v99-btn.no{
-    background:rgba(255,255,255,.06);
-    color:#f5c518;
-    border:1px solid rgba(245,197,24,.42);
-  }
-  .bp-v99-steal-blocked{
-    display:none!important;
-  }
-  @media(max-width:660px){
-    .bp-v99-actions{flex-direction:column;}
-    .bp-v99-btn{width:100%;}
-  }
-</style>
-
-
 <!-- v100 core Free Life prompt styling -->
-<style id="bp-v100-free-life-core-css">
-  .bp-v100-free-life-prompt{
-    margin:10px 0 12px;
-    padding:13px;
-    border-radius:15px;
-    border:1.5px solid rgba(82,183,136,.72);
-    background:linear-gradient(135deg,rgba(82,183,136,.22),rgba(82,183,136,.08));
-    box-shadow:0 0 28px rgba(82,183,136,.22);
-    text-align:center;
-  }
-  .bp-v100-title{
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1.28rem;
-    letter-spacing:.1em;
-    color:#52b788;
-    margin-bottom:4px;
-  }
-  .bp-v100-text{
-    font-size:.88rem;
-    color:#dceee5;
-    line-height:1.35;
-    margin-bottom:10px;
-    font-weight:800;
-  }
-  .bp-v100-actions{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-  }
-  .bp-v100-btn{
-    border:0;
-    border-radius:10px;
-    padding:9px 13px;
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1rem;
-    letter-spacing:.08em;
-    cursor:pointer;
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .bp-v100-btn.yes{
-    background:linear-gradient(135deg,#52b788,#2d9d66);
-    color:#04100a;
-    box-shadow:0 4px 14px rgba(82,183,136,.28);
-  }
-  .bp-v100-btn.no{
-    background:rgba(255,255,255,.06);
-    color:#f5c518;
-    border:1px solid rgba(245,197,24,.42);
-  }
-  @media(max-width:660px){
-    .bp-v100-actions{flex-direction:column;}
-    .bp-v100-btn{width:100%;}
-  }
-</style>
-
-
 <!-- v101: Direct offerSteal intercept for Free Life priority.
      This blocks the actual Steal prompt function until Free Life is used or declined. -->
-<script id="bp-v101-offer-steal-free-life-intercept">
+
+<!-- v102: one clean Free Life prompt + one-card initializer -->
+<script id="bp-v102-free-life-single-prompt-support">
 (function(){
-  if(window.__bpV101OfferStealIntercept) return;
-  window.__bpV101OfferStealIntercept = true;
+  if(window.__bpV102FreeLifeSupport) return;
+  window.__bpV102FreeLifeSupport = true;
 
-  const FREE_LIFE_KEY = "__bpFreeLives";
-  let bypassFreeLifeForSteal = false;
-  let savedQuestionForRetry = null;
-
-  function currentPlayer(){
-    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
-  }
-
-  function freeLivesLeft(){
-    const p = currentPlayer();
-    if(!p) return 0;
-
-    // v95/v100 key
-    if(typeof p[FREE_LIFE_KEY] === "number"){
-      p[FREE_LIFE_KEY] = Math.max(0, Math.min(1, Number(p[FREE_LIFE_KEY]) || 0));
-      return p[FREE_LIFE_KEY];
-    }
-
-    // If the game shows Free Life but v95 key was never initialized for this player,
-    // initialize to 1. This is still capped and consumed once.
-    p[FREE_LIFE_KEY] = 1;
-    return 1;
-  }
-
-  function consumeFreeLife(){
-    const p=currentPlayer();
-    if(!p || freeLivesLeft() <= 0) return false;
-
-    p[FREE_LIFE_KEY] = 0;
-
+  function normalizeFreeLives(){
     try{
-      if(p.powerCards && typeof p.powerCards === "object"){
-        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
-        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
-      }
-      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
-        if("freeLife" in p.cards) p.cards.freeLife = 0;
-        if("freeLives" in p.cards) p.cards.freeLives = 0;
-      }
-    }catch(e){}
-
-    try{ updateUI && updateUI(); }catch(e){}
-    return true;
-  }
-
-  function saveCurrentQuestion(){
-    try{
-      savedQuestionForRetry = curQ ? JSON.parse(JSON.stringify(curQ)) : null;
-    }catch(e){
-      savedQuestionForRetry = curQ || null;
-    }
-  }
-
-  function retrySameQuestion(){
-    const q = savedQuestionForRetry || curQ;
-    if(!q) return false;
-
-    try{ curQ = q; }catch(e){}
-
-    const qText = document.getElementById("qText");
-    if(qText) qText.textContent = q.q;
-
-    const qa = document.getElementById("qAnswers");
-    if(qa && Array.isArray(q.a)){
-      qa.innerHTML = q.a.map((ans,i)=>
-        `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
-      ).join("");
-    }
-
-    document.querySelectorAll("#qAnswers .ans-btn").forEach(btn=>{
-      btn.disabled = false;
-      btn.classList.remove("correct","wrong");
-      try{ btn.blur(); }catch(e){}
-    });
-
-    const steal = document.getElementById("stealPrompt");
-    if(steal) steal.classList.add("hidden");
-
-    const cont = document.getElementById("contBtn");
-    if(cont) cont.classList.add("hidden");
-
-    const fb = document.getElementById("qFb") || document.getElementById("qFeedback");
-    if(fb){
-      fb.textContent = "💚 Free Life used — try the same question again.";
-      fb.className = "q-feedback ok";
-    }
-
-    try{
-      waitingAnswer = true;
-      answeredCorrect = false;
-      stealMode = false;
-      stealerIdx = null;
-      startTimer && startTimer();
-    }catch(e){}
-
-    return true;
-  }
-
-  function hideStealPrompt(){
-    try{
-      const steal = document.getElementById("stealPrompt");
-      if(steal) steal.classList.add("hidden");
+      if(!Array.isArray(players)) return;
+      players.forEach(p=>{
+        if(!p) return;
+        if(typeof p.__bpFreeLives !== 'number') p.__bpFreeLives = 1;
+        p.__bpFreeLives = Math.max(0, Math.min(1, Number(p.__bpFreeLives)||0));
+      });
     }catch(e){}
   }
 
-  function showFreeLifePromptBeforeSteal(originalOfferSteal, originalArgs){
-    if(document.getElementById("bpV101FreeLifePrompt")) return;
-
-    hideStealPrompt();
-    saveCurrentQuestion();
-
-    const cont = document.getElementById("contBtn");
-    if(cont) cont.classList.add("hidden");
-
-    const fb = document.getElementById("qFb") || document.getElementById("qFeedback");
-    if(fb){
-      fb.textContent = "❌ Wrong — Free Life available.";
-      fb.className = "q-feedback bad";
-    }
-
-    const prompt = document.createElement("div");
-    prompt.id = "bpV101FreeLifePrompt";
-    prompt.className = "bp-v101-free-life-prompt";
-    prompt.innerHTML = `
-      <div class="bp-v101-title">💚 Use Free Life?</div>
-      <div class="bp-v101-text">Retry this same question before anyone can steal. Your Free Life card will be used up.</div>
-      <div class="bp-v101-actions">
-        <button type="button" id="bpV101UseFreeLife" class="bp-v101-btn yes">Retry Same Question</button>
-        <button type="button" id="bpV101DeclineFreeLife" class="bp-v101-btn no">Decline — Allow Steal</button>
-      </div>
-    `;
-
-    const box = document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
-    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
-    else box.appendChild(prompt);
-
-    document.getElementById("bpV101UseFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      if(consumeFreeLife()){
-        try{ addLog("💚 " + ((currentPlayer() && currentPlayer().name) || "Player") + " used Free Life before Steal."); }catch(err){}
-        prompt.remove();
-        hideStealPrompt();
-        retrySameQuestion();
-      }
-    }, {passive:false});
-
-    document.getElementById("bpV101DeclineFreeLife").addEventListener("pointerdown", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      prompt.remove();
-      try{ addLog("💚 Free Life declined — Steal offered."); }catch(err){}
-
-      bypassFreeLifeForSteal = true;
-      try{
-        originalOfferSteal.apply(window, originalArgs || []);
-      } finally {
-        bypassFreeLifeForSteal = false;
-      }
-    }, {passive:false});
-  }
-
-  function installOfferStealIntercept(){
-    try{
-      if(typeof window.offerSteal !== "function") return false;
-      if(window.offerSteal.__bpV101Intercepted) return true;
-
-      const originalOfferSteal = window.offerSteal;
-      window.offerSteal = function(){
-        // If Free Life exists, intercept before the Steal prompt is built.
-        if(!bypassFreeLifeForSteal && freeLivesLeft() > 0){
-          showFreeLifePromptBeforeSteal(originalOfferSteal, arguments);
-          return;
-        }
-        return originalOfferSteal.apply(this, arguments);
-      };
-
-      window.offerSteal.__bpV101Intercepted = true;
-      try{ offerSteal = window.offerSteal; }catch(e){}
-      return true;
-    }catch(e){
-      return false;
-    }
-  }
-
-  // Install now and again shortly after load in case another patch reassigns offerSteal.
-  installOfferStealIntercept();
-  setTimeout(installOfferStealIntercept, 200);
-  setTimeout(installOfferStealIntercept, 800);
-
-  // Extra guard: if the Steal panel appears while current player still has Free Life, hide it and show Free Life.
   try{
-    new MutationObserver(function(){
-      const steal = document.getElementById("stealPrompt");
-      if(!steal) return;
-      const visible = !steal.classList.contains("hidden");
-      if(visible && freeLivesLeft() > 0 && !bypassFreeLifeForSteal){
-        steal.classList.add("hidden");
-        if(typeof window.offerSteal === "function"){
-          // We cannot call offerSteal here or it loops; instead build the prompt directly.
-          const original = window.offerSteal.__original || function(){};
-          showFreeLifePromptBeforeSteal(function(){
-            bypassFreeLifeForSteal = true;
-            steal.classList.remove("hidden");
-            bypassFreeLifeForSteal = false;
-          }, []);
-        }
-      }
-    }).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["class","style"]});
+    if(typeof window.startGame === 'function' && !window.startGame.__bpV102FreeLife){
+      const oldStart = window.startGame;
+      window.startGame = function(){
+        const result = oldStart.apply(this, arguments);
+        setTimeout(function(){
+          try{
+            if(Array.isArray(players)){
+              players.forEach(p=>{ if(p) p.__bpFreeLives = 1; });
+            }
+            normalizeFreeLives();
+            try{ updateUI(); }catch(e){}
+          }catch(e){}
+        }, 0);
+        return result;
+      };
+      window.startGame.__bpV102FreeLife = true;
+      try{ startGame = window.startGame; }catch(e){}
+    }
   }catch(e){}
 
-  window.BP_OFFER_STEAL_INTERCEPT_STATUS = function(){
-    return {
-      installed: !!(window.offerSteal && window.offerSteal.__bpV101Intercepted),
-      freeLivesLeft: freeLivesLeft(),
-      bypassFreeLifeForSteal,
-      promptVisible: !!document.getElementById("bpV101FreeLifePrompt"),
-      stealHidden: document.getElementById("stealPrompt")?.classList.contains("hidden")
-    };
+  window.BP_FREE_LIFE_STATUS = function(){
+    normalizeFreeLives();
+    try{
+      return players.map((p,i)=>({index:i,name:p&&p.name,freeLives:p?p.__bpFreeLives:0}));
+    }catch(e){return [];}
   };
 
-  console.log("v101 offerSteal Free Life intercept active");
+  console.log('v102 single Free Life prompt active');
 })();
 </script>
 
-<style id="bp-v101-free-life-priority-css">
-  .bp-v101-free-life-prompt{
+<style id="bp-v102-free-life-single-prompt-css">
+  .bp-v102-free-life-prompt{
     margin:10px 0 12px;
     padding:13px;
     border-radius:15px;
@@ -32901,26 +31136,26 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
     box-shadow:0 0 28px rgba(82,183,136,.22);
     text-align:center;
   }
-  .bp-v101-title{
+  .bp-v102-title{
     font-family:'Bebas Neue',sans-serif;
     font-size:1.28rem;
     letter-spacing:.1em;
     color:#52b788;
     margin-bottom:4px;
   }
-  .bp-v101-text{
+  .bp-v102-text{
     font-size:.88rem;
     color:#dceee5;
     line-height:1.35;
     margin-bottom:10px;
     font-weight:800;
   }
-  .bp-v101-actions{
+  .bp-v102-actions{
     display:flex;
     gap:8px;
     justify-content:center;
   }
-  .bp-v101-btn{
+  .bp-v102-btn{
     border:0;
     border-radius:10px;
     padding:9px 13px;
@@ -32931,19 +31166,19 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
     touch-action:manipulation;
     -webkit-tap-highlight-color:transparent;
   }
-  .bp-v101-btn.yes{
+  .bp-v102-btn.yes{
     background:linear-gradient(135deg,#52b788,#2d9d66);
     color:#04100a;
     box-shadow:0 4px 14px rgba(82,183,136,.28);
   }
-  .bp-v101-btn.no{
+  .bp-v102-btn.no{
     background:rgba(255,255,255,.06);
     color:#f5c518;
     border:1px solid rgba(245,197,24,.42);
   }
   @media(max-width:660px){
-    .bp-v101-actions{flex-direction:column;}
-    .bp-v101-btn{width:100%;}
+    .bp-v102-actions{flex-direction:column;}
+    .bp-v102-btn{width:100%;}
   }
 </style>
 
