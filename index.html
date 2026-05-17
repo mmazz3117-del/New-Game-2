@@ -31087,5 +31087,705 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
 })();
 </script>
 
+
+<!-- v96: Free Life gets priority before Steal.
+     If wrong + Free Life available: offer Free Life first.
+     If declined: then Steal can appear.
+     If used: consume Free Life and give a new question. -->
+<script id="bp-v96-free-life-before-steal">
+(function(){
+  if(window.__bpV96FreeLifeBeforeSteal) return;
+  window.__bpV96FreeLifeBeforeSteal = true;
+
+  const FREE_LIFE_KEY = "__bpFreeLives";
+  let pendingStealNodes = [];
+  let suppressStealUntilDecision = false;
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function getFreeLifeCount(p){
+    if(!p) return 0;
+    if(typeof p[FREE_LIFE_KEY] !== "number") p[FREE_LIFE_KEY] = 1;
+    if(p[FREE_LIFE_KEY] > 1) p[FREE_LIFE_KEY] = 1;
+    if(p[FREE_LIFE_KEY] < 0) p[FREE_LIFE_KEY] = 0;
+    return p[FREE_LIFE_KEY];
+  }
+
+  function consumeFreeLife(p){
+    if(!p || getFreeLifeCount(p) <= 0) return false;
+    p[FREE_LIFE_KEY] = 0;
+    try{
+      if(p.powerCards && typeof p.powerCards === "object"){
+        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
+        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
+      }
+      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
+        if("freeLife" in p.cards) p.cards.freeLife = 0;
+        if("freeLives" in p.cards) p.cards.freeLives = 0;
+      }
+    }catch(e){}
+    try{ updateUI && updateUI(); }catch(e){}
+    return true;
+  }
+
+  function setFeedback(text, ok){
+    try{
+      const fb = document.getElementById("qFeedback");
+      if(fb){
+        fb.textContent = text || "";
+        fb.className = "q-feedback " + (ok ? "ok" : "bad");
+      }
+    }catch(e){}
+  }
+
+  function stealCandidates(){
+    const selectors = [
+      "#stealOverlay",
+      ".steal-overlay",
+      "#stealBox",
+      ".steal-box",
+      ".steal-panel",
+      ".steal-modal",
+      "#stealPrompt",
+      ".steal-prompt",
+      "[id*='steal' i]",
+      "[class*='steal' i]"
+    ];
+    let nodes = [];
+    selectors.forEach(sel=>{
+      try{ nodes = nodes.concat([...document.querySelectorAll(sel)]); }catch(e){}
+    });
+    // De-dupe and avoid hiding our own prompt if naming ever overlaps.
+    return [...new Set(nodes)].filter(el => el && el.id !== "bpV96FreeLifePrompt");
+  }
+
+  function hideStealTemporarily(){
+    if(!suppressStealUntilDecision) return;
+    pendingStealNodes = [];
+    stealCandidates().forEach(el=>{
+      try{
+        if(el.closest && el.closest("#bpV96FreeLifePrompt")) return;
+        if(el.style.display !== "none" && !el.classList.contains("hidden")){
+          pendingStealNodes.push(el);
+        }
+        el.dataset.bpV96HiddenSteal = "1";
+        el.style.display = "none";
+        el.classList.add("bp-v96-steal-hidden");
+      }catch(e){}
+    });
+  }
+
+  function revealSteal(){
+    suppressStealUntilDecision = false;
+    try{
+      document.querySelectorAll(".bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").forEach(el=>{
+        el.classList.remove("bp-v96-steal-hidden");
+        el.style.display = "";
+        delete el.dataset.bpV96HiddenSteal;
+      });
+    }catch(e){}
+    pendingStealNodes = [];
+  }
+
+  function closeQuestionNormally(){
+    try{
+      const cont = document.getElementById("contBtn");
+      if(cont) cont.classList.remove("hidden");
+    }catch(e){}
+  }
+
+  function renderAnswersForQuestion(q){
+    const qa = document.getElementById("qAnswers");
+    if(!qa || !q || !Array.isArray(q.a)) return;
+    qa.innerHTML = q.a.map((ans,i)=>
+      `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
+    ).join("");
+  }
+
+  function showNewQuestionSameTurn(){
+    try{
+      const p = currentPlayer();
+      let did = "00s";
+      try{
+        if(typeof getPlayerDecadeId === "function") did = getPlayerDecadeId(p);
+        else if(p && p._did) did = p._did;
+      }catch(e){}
+      const q = (typeof getFilteredQ === "function") ? getFilteredQ(did) :
+                (typeof getQ === "function") ? getQ(did) : null;
+
+      if(q){
+        curQ = q;
+        const qText = document.getElementById("qText");
+        if(qText) qText.textContent = q.q;
+        renderAnswersForQuestion(q);
+
+        try{
+          waitingAnswer = true;
+          document.querySelectorAll("#qAnswers .ans-btn").forEach(b=>{
+            b.disabled = false;
+            b.classList.remove("correct","wrong");
+          });
+        }catch(e){}
+
+        const cont = document.getElementById("contBtn");
+        if(cont) cont.classList.add("hidden");
+        setFeedback("", true);
+        return true;
+      }
+    }catch(e){
+      console.warn("v96 Free Life replacement question failed", e);
+    }
+    return false;
+  }
+
+  function showPrompt(){
+    if(document.getElementById("bpV96FreeLifePrompt")) return;
+    const p = currentPlayer();
+    if(!p || getFreeLifeCount(p) <= 0) return;
+
+    suppressStealUntilDecision = true;
+    hideStealTemporarily();
+
+    // Remove older prompt if v86 created one.
+    try{
+      const old = document.getElementById("bpFreeLifePrompt");
+      if(old) old.remove();
+    }catch(e){}
+
+    const box = document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
+    const cont = document.getElementById("contBtn");
+    if(cont) cont.classList.add("hidden");
+
+    const prompt = document.createElement("div");
+    prompt.id = "bpV96FreeLifePrompt";
+    prompt.className = "bp-v96-free-life-prompt";
+    prompt.innerHTML = `
+      <div class="bp-v96-free-life-title">💚 Use Free Life?</div>
+      <div class="bp-v96-free-life-text">You missed it, but you still have 1 Free Life. Use it now for a new question?</div>
+      <div class="bp-v96-free-life-actions">
+        <button type="button" id="bpV96UseFreeLife" class="bp-v96-free-life-btn yes">Use Free Life</button>
+        <button type="button" id="bpV96DeclineFreeLife" class="bp-v96-free-life-btn no">No — Offer Steal</button>
+      </div>
+    `;
+
+    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
+    else box.appendChild(prompt);
+
+    document.getElementById("bpV96UseFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      const player = currentPlayer();
+      if(!consumeFreeLife(player)){
+        prompt.remove();
+        revealSteal();
+        closeQuestionNormally();
+        return;
+      }
+
+      try{ addLog("💚 " + ((player && player.name) || "Player") + " used a Free Life before Steal."); }catch(err){}
+      prompt.remove();
+      suppressStealUntilDecision = false;
+
+      // Do NOT reveal steal, because Free Life replaces the miss.
+      document.querySelectorAll(".bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").forEach(el=>{
+        try{ el.remove(); }catch(err){ el.style.display="none"; }
+      });
+
+      setFeedback("💚 Free Life used! Try a new question.", true);
+      const ok = showNewQuestionSameTurn();
+      if(!ok) closeQuestionNormally();
+    }, {passive:false});
+
+    document.getElementById("bpV96DeclineFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      prompt.remove();
+      setFeedback("Free Life declined — Steal is available.", false);
+      revealSteal();
+
+      // If no steal UI was created by the original flow, let the normal continue button show.
+      setTimeout(function(){
+        const anyVisibleSteal = stealCandidates().some(el=>{
+          try{
+            const cs = getComputedStyle(el);
+            return cs.display !== "none" && cs.visibility !== "hidden" && !el.classList.contains("hidden");
+          }catch(e){ return false; }
+        });
+        if(!anyVisibleSteal) closeQuestionNormally();
+      }, 40);
+    }, {passive:false});
+  }
+
+  // Monitor wrong answer result after existing answer handler. If Free Life exists, intercept before Steal.
+  document.addEventListener("click", function(e){
+    const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+
+    const p = currentPlayer();
+    const hadFreeLife = getFreeLifeCount(p) > 0;
+
+    setTimeout(function(){
+      try{
+        const wasWrong = btn.classList.contains("wrong");
+        if(wasWrong && hadFreeLife && getFreeLifeCount(currentPlayer()) > 0){
+          suppressStealUntilDecision = true;
+          hideStealTemporarily();
+          showPrompt();
+        }
+      }catch(err){}
+    }, 35);
+  }, true);
+
+  // Also catch iPhone/pointerdown path, because v64 uses pointerdown answer handling.
+  document.addEventListener("pointerdown", function(e){
+    const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+
+    const p = currentPlayer();
+    const hadFreeLife = getFreeLifeCount(p) > 0;
+
+    setTimeout(function(){
+      try{
+        const wasWrong = btn.classList.contains("wrong");
+        if(wasWrong && hadFreeLife && getFreeLifeCount(currentPlayer()) > 0){
+          suppressStealUntilDecision = true;
+          hideStealTemporarily();
+          showPrompt();
+        }
+      }catch(err){}
+    }, 65);
+  }, true);
+
+  // If steal UI appears while Free Life decision is pending, hide it until decline.
+  try{
+    new MutationObserver(function(){
+      if(suppressStealUntilDecision) hideStealTemporarily();
+    }).observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+
+  window.BP_FREE_LIFE_ORDER_STATUS = function(){
+    return {
+      suppressStealUntilDecision,
+      currentPlayer: currentPlayer() && currentPlayer().name,
+      freeLives: getFreeLifeCount(currentPlayer()),
+      hiddenStealNodes: document.querySelectorAll(".bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").length
+    };
+  };
+
+  console.log("v96 Free Life before Steal active");
+})();
+</script>
+
+<style id="bp-v96-free-life-before-steal-css">
+  .bp-v96-free-life-prompt{
+    margin:10px 0 12px;
+    padding:13px;
+    border-radius:15px;
+    border:1.5px solid rgba(82,183,136,.72);
+    background:linear-gradient(135deg,rgba(82,183,136,.20),rgba(82,183,136,.07));
+    box-shadow:0 0 26px rgba(82,183,136,.20);
+    text-align:center;
+  }
+  .bp-v96-free-life-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.28rem;
+    letter-spacing:.1em;
+    color:#52b788;
+    margin-bottom:4px;
+  }
+  .bp-v96-free-life-text{
+    font-size:.88rem;
+    color:#dceee5;
+    line-height:1.35;
+    margin-bottom:10px;
+    font-weight:800;
+  }
+  .bp-v96-free-life-actions{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+  }
+  .bp-v96-free-life-btn{
+    border:0;
+    border-radius:10px;
+    padding:9px 13px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:.08em;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bp-v96-free-life-btn.yes{
+    background:linear-gradient(135deg,#52b788,#2d9d66);
+    color:#04100a;
+    box-shadow:0 4px 14px rgba(82,183,136,.28);
+  }
+  .bp-v96-free-life-btn.no{
+    background:rgba(255,255,255,.06);
+    color:#f5c518;
+    border:1px solid rgba(245,197,24,.42);
+  }
+  .bp-v96-steal-hidden{
+    display:none!important;
+  }
+  @media(max-width:660px){
+    .bp-v96-free-life-actions{flex-direction:column;}
+    .bp-v96-free-life-btn{width:100%;}
+  }
+</style>
+
+
+<!-- v97: Solo Challenge Mode.
+     In 1-player mode, max 3 wrong answers.
+     Free Life is offered first and prevents the miss from counting if used. -->
+<script id="bp-v97-solo-challenge-mode">
+(function(){
+  if(window.__bpV97SoloChallenge) return;
+  window.__bpV97SoloChallenge = true;
+
+  const MAX_SOLO_WRONG = 3;
+  let soloWrongCount = 0;
+  let handledWrongKeys = new Set();
+
+  function isSolo(){
+    try{return Array.isArray(players) && players.length === 1;}catch(e){return false;}
+  }
+
+  function currentQuestionKey(idx){
+    try{
+      const qText = document.getElementById("qText")?.textContent || "";
+      return qText + "::" + String(idx ?? "");
+    }catch(e){
+      return String(Date.now());
+    }
+  }
+
+  function currentPlayer(){
+    try{return players && players[0] ? players[0] : null;}catch(e){return null;}
+  }
+
+  function freeLivesLeft(){
+    const p = currentPlayer();
+    if(!p) return 0;
+    if(typeof p.__bpFreeLives === "number") return Math.max(0, Math.min(1, p.__bpFreeLives));
+    return 0;
+  }
+
+  function updateSoloHUD(){
+    try{
+      if(!isSolo()){
+        const old = document.getElementById("bpSoloChallengeHud");
+        if(old) old.remove();
+        return;
+      }
+
+      let hud = document.getElementById("bpSoloChallengeHud");
+      if(!hud){
+        hud = document.createElement("div");
+        hud.id = "bpSoloChallengeHud";
+        hud.className = "bp-solo-hud";
+        document.body.appendChild(hud);
+      }
+
+      const remaining = Math.max(0, MAX_SOLO_WRONG - soloWrongCount);
+      hud.textContent = "SOLO LIVES: " + remaining + "/" + MAX_SOLO_WRONG;
+      hud.classList.toggle("danger", remaining <= 1);
+    }catch(e){}
+  }
+
+  function showSoloToast(text){
+    try{
+      const old = document.querySelector(".bp-v97-solo-toast");
+      if(old) old.remove();
+
+      const el = document.createElement("div");
+      el.className = "bp-v97-solo-toast";
+      el.textContent = text;
+      document.body.appendChild(el);
+      setTimeout(()=>{try{el.remove();}catch(e){}},1500);
+    }catch(e){}
+  }
+
+  function endSoloGame(){
+    try{
+      const qOverlay = document.getElementById("qOverlay");
+      if(qOverlay) qOverlay.classList.add("hidden");
+    }catch(e){}
+
+    try{
+      const old = document.getElementById("bpSoloGameOver");
+      if(old) old.remove();
+
+      const overlay = document.createElement("div");
+      overlay.id = "bpSoloGameOver";
+      overlay.className = "bp-solo-game-over";
+      overlay.innerHTML = `
+        <div class="bp-solo-game-over-box">
+          <div class="bp-solo-game-over-icon">🎤</div>
+          <div class="bp-solo-game-over-title">Solo Set Over</div>
+          <div class="bp-solo-game-over-text">You missed ${MAX_SOLO_WRONG} questions. The crowd wants a comeback tour.</div>
+          <button type="button" id="bpSoloPlayAgainBtn" class="bp-solo-play-again">Play Again</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      document.getElementById("bpSoloPlayAgainBtn").addEventListener("pointerdown", function(e){
+        e.preventDefault();
+        try{ location.reload(); }catch(err){}
+      }, {passive:false});
+    }catch(e){}
+  }
+
+  function countSoloWrong(reason){
+    if(!isSolo()) return;
+    soloWrongCount = Math.min(MAX_SOLO_WRONG, soloWrongCount + 1);
+    updateSoloHUD();
+
+    const remaining = MAX_SOLO_WRONG - soloWrongCount;
+    try{ addLog("🎤 Solo miss " + soloWrongCount + "/" + MAX_SOLO_WRONG + "."); }catch(e){}
+
+    if(soloWrongCount >= MAX_SOLO_WRONG){
+      showSoloToast("🎤 SOLO SET OVER");
+      setTimeout(endSoloGame, 450);
+    } else {
+      showSoloToast("🎤 SOLO MISS — " + remaining + " LEFT");
+    }
+  }
+
+  function bindDeclineButtonsForSolo(key){
+    const ids = ["bpV96DeclineFreeLife", "bpSkipFreeLifeBtn"];
+    ids.forEach(id=>{
+      const btn = document.getElementById(id);
+      if(btn && !btn.__bpV97SoloBound){
+        btn.__bpV97SoloBound = true;
+        btn.addEventListener("pointerdown", function(){
+          setTimeout(function(){
+            if(!handledWrongKeys.has(key + "::counted")){
+              handledWrongKeys.add(key + "::counted");
+              countSoloWrong("declined-free-life");
+            }
+          }, 50);
+        }, {capture:true, passive:false});
+      }
+    });
+  }
+
+  function wrongAnswerObserved(btn, idx){
+    if(!isSolo() || !btn) return;
+    const key = currentQuestionKey(idx);
+    if(handledWrongKeys.has(key)) return;
+    handledWrongKeys.add(key);
+
+    setTimeout(function(){
+      try{
+        if(!btn.classList.contains("wrong")) return;
+
+        // If Free Life prompt is visible, do not count yet.
+        // Count only if player declines it.
+        const prompt = document.getElementById("bpV96FreeLifePrompt") || document.getElementById("bpFreeLifePrompt");
+        if(prompt && freeLivesLeft() > 0){
+          bindDeclineButtonsForSolo(key);
+          return;
+        }
+
+        // If there is no prompt/free life, count the wrong answer now.
+        if(!handledWrongKeys.has(key + "::counted")){
+          handledWrongKeys.add(key + "::counted");
+          countSoloWrong("wrong-no-free-life");
+        }
+      }catch(e){}
+    }, 180);
+  }
+
+  function hookAnswerEvents(){
+    document.addEventListener("pointerdown", function(e){
+      const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+      if(!btn || !isSolo()) return;
+
+      const idx = btn.getAttribute("data-ans-idx");
+      setTimeout(function(){
+        wrongAnswerObserved(btn, idx);
+      }, 120);
+    }, true);
+
+    document.addEventListener("click", function(e){
+      const btn = e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+      if(!btn || !isSolo()) return;
+
+      const idx = btn.getAttribute("data-ans-idx");
+      setTimeout(function(){
+        wrongAnswerObserved(btn, idx);
+      }, 120);
+    }, true);
+  }
+
+  // Reset challenge on a fresh game.
+  try{
+    if(typeof window.startGame === "function" && !window.startGame.__bpV97SoloReset){
+      const oldStart = window.startGame;
+      window.startGame = function(){
+        soloWrongCount = 0;
+        handledWrongKeys = new Set();
+        const result = oldStart.apply(this, arguments);
+        setTimeout(updateSoloHUD, 120);
+        return result;
+      };
+      window.startGame.__bpV97SoloReset = true;
+      try{ startGame = window.startGame; }catch(e){}
+    }
+  }catch(e){}
+
+  // Keep HUD current when UI refreshes.
+  ["updateUI","renderPlayers"].forEach(function(name){
+    try{
+      if(typeof window[name] === "function" && !window[name].__bpV97SoloHud){
+        const old = window[name];
+        window[name] = function(){
+          const result = old.apply(this, arguments);
+          setTimeout(updateSoloHUD, 0);
+          return result;
+        };
+        window[name].__bpV97SoloHud = true;
+        try{ eval(name + "=window[name]"); }catch(e){}
+      }
+    }catch(e){}
+  });
+
+  hookAnswerEvents();
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", updateSoloHUD);
+  } else {
+    updateSoloHUD();
+  }
+
+  window.BP_SOLO_STATUS = function(){
+    return {
+      solo:isSolo(),
+      wrong:soloWrongCount,
+      maxWrong:MAX_SOLO_WRONG,
+      remaining:MAX_SOLO_WRONG - soloWrongCount,
+      freeLives:freeLivesLeft()
+    };
+  };
+
+  console.log("v97 Solo Challenge Mode active");
+})();
+</script>
+
+<style id="bp-v97-solo-challenge-css">
+  .bp-solo-hud{
+    position:fixed;
+    right:8px;
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);
+    z-index:770;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(82,183,136,.55);
+    background:rgba(0,0,0,.68);
+    color:#52b788;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:.86rem;
+    letter-spacing:.1em;
+    box-shadow:0 0 18px rgba(82,183,136,.16);
+    pointer-events:none;
+  }
+  .bp-solo-hud.danger{
+    border-color:rgba(255,74,74,.7);
+    color:#ff6b6b;
+    box-shadow:0 0 18px rgba(255,74,74,.2);
+  }
+
+  .bp-v97-solo-toast{
+    position:fixed;
+    left:50%;
+    top:42%;
+    transform:translate(-50%,-50%);
+    z-index:960;
+    padding:12px 20px;
+    border-radius:16px;
+    background:linear-gradient(135deg,rgba(255,74,74,.96),rgba(245,197,24,.96));
+    color:#080808;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.25rem;
+    letter-spacing:.12em;
+    box-shadow:0 12px 36px rgba(255,74,74,.35),0 0 50px rgba(245,197,24,.22);
+    pointer-events:none;
+    animation:bpV97SoloToast 1.45s ease-out forwards;
+  }
+  @keyframes bpV97SoloToast{
+    0%{opacity:0;transform:translate(-50%,-35%) scale(.72);}
+    18%{opacity:1;transform:translate(-50%,-50%) scale(1.08);}
+    78%{opacity:1;}
+    100%{opacity:0;transform:translate(-50%,-70%) scale(.94);}
+  }
+
+  .bp-solo-game-over{
+    position:fixed;
+    inset:0;
+    z-index:1200;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:radial-gradient(ellipse at center,rgba(255,74,74,.15),rgba(0,0,0,.94) 65%);
+    backdrop-filter:blur(8px);
+  }
+  .bp-solo-game-over-box{
+    width:min(92vw,420px);
+    padding:24px 18px;
+    border-radius:22px;
+    border:1.5px solid rgba(245,197,24,.45);
+    background:linear-gradient(180deg,rgba(18,18,28,.96),rgba(6,6,12,.98));
+    box-shadow:0 16px 50px rgba(0,0,0,.6),0 0 35px rgba(245,197,24,.18);
+    text-align:center;
+  }
+  .bp-solo-game-over-icon{
+    font-size:3.2rem;
+    margin-bottom:8px;
+  }
+  .bp-solo-game-over-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:2.15rem;
+    color:#f5c518;
+    letter-spacing:.08em;
+    margin-bottom:6px;
+  }
+  .bp-solo-game-over-text{
+    color:#ddd;
+    font-weight:700;
+    line-height:1.35;
+    margin-bottom:16px;
+  }
+  .bp-solo-play-again{
+    border:0;
+    border-radius:12px;
+    padding:12px 22px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.25rem;
+    letter-spacing:.1em;
+    color:#080808;
+    background:linear-gradient(135deg,#f5c518,#ff9500);
+    box-shadow:0 8px 24px rgba(245,197,24,.3);
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  @media(max-width:660px){
+    .bp-solo-hud{
+      right:6px;
+      bottom:calc(env(safe-area-inset-bottom, 0px) + 74px);
+      font-size:.72rem;
+      padding:5px 8px;
+    }
+  }
+</style>
+
 </body>
 </html>
