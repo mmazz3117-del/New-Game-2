@@ -30889,5 +30889,203 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   }
 </style>
 
+
+<!-- v95: Free Life limited-use fix.
+     Start each player with exactly 1 Free Life and consume it once.
+     This replaces the overly-broad v86 detection that could treat normal lives/other fields as unlimited Free Lives. -->
+<script id="bp-v95-free-life-limited-fix">
+(function(){
+  if(window.__bpV95FreeLifeLimitedFix) return;
+  window.__bpV95FreeLifeLimitedFix = true;
+
+  const FREE_LIFE_KEY = "__bpFreeLives";
+
+  function normalizePlayerFreeLives(){
+    try{
+      if(!Array.isArray(players)) return;
+      players.forEach(function(p){
+        if(!p) return;
+
+        // If not yet initialized, start with exactly 1.
+        if(typeof p[FREE_LIFE_KEY] !== "number"){
+          p[FREE_LIFE_KEY] = 1;
+        }
+
+        // Hard clamp. This prevents any older card/life field from being read as unlimited.
+        if(p[FREE_LIFE_KEY] > 1) p[FREE_LIFE_KEY] = 1;
+        if(p[FREE_LIFE_KEY] < 0) p[FREE_LIFE_KEY] = 0;
+
+        // Keep common display/storage fields in sync when they exist.
+        if(p.powerCards && typeof p.powerCards === "object"){
+          if("freeLife" in p.powerCards) p.powerCards.freeLife = p[FREE_LIFE_KEY];
+          if("freeLives" in p.powerCards) p.powerCards.freeLives = p[FREE_LIFE_KEY];
+        }
+        if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
+          if("freeLife" in p.cards) p.cards.freeLife = p[FREE_LIFE_KEY];
+          if("freeLives" in p.cards) p.cards.freeLives = p[FREE_LIFE_KEY];
+        }
+      });
+    }catch(e){}
+  }
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function getFreeLifeCountStrict(p){
+    if(!p) return 0;
+    if(typeof p[FREE_LIFE_KEY] !== "number"){
+      p[FREE_LIFE_KEY] = 1;
+    }
+    if(p[FREE_LIFE_KEY] > 1) p[FREE_LIFE_KEY] = 1;
+    if(p[FREE_LIFE_KEY] < 0) p[FREE_LIFE_KEY] = 0;
+    return p[FREE_LIFE_KEY];
+  }
+
+  function consumeFreeLifeStrict(p){
+    if(!p || getFreeLifeCountStrict(p) <= 0) return false;
+    p[FREE_LIFE_KEY] = 0;
+
+    if(p.powerCards && typeof p.powerCards === "object"){
+      if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
+      if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
+    }
+    if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
+      if("freeLife" in p.cards) p.cards.freeLife = 0;
+      if("freeLives" in p.cards) p.cards.freeLives = 0;
+    }
+
+    try{ updateUI && updateUI(); }catch(e){}
+    return true;
+  }
+
+  // Reset to exactly 1 whenever a fresh game begins.
+  try{
+    if(typeof window.startGame === "function" && !window.startGame.__bpV95FreeLifeReset){
+      const oldStartGame = window.startGame;
+      window.startGame = function(){
+        const result = oldStartGame.apply(this, arguments);
+        setTimeout(function(){
+          try{
+            if(Array.isArray(players)){
+              players.forEach(function(p){
+                if(p) p[FREE_LIFE_KEY] = 1;
+              });
+            }
+            normalizePlayerFreeLives();
+            try{ updateUI && updateUI(); }catch(e){}
+          }catch(err){}
+        }, 0);
+        return result;
+      };
+      window.startGame.__bpV95FreeLifeReset = true;
+      try{ startGame = window.startGame; }catch(e){}
+    }
+  }catch(e){}
+
+  // Re-wrap checkAns after v86 so the strict Free Life count wins.
+  try{
+    if(typeof window.checkAns === "function" && !window.checkAns.__bpV95FreeLifeStrict){
+      const previousCheckAns = window.checkAns;
+      window.checkAns = function(idx){
+        normalizePlayerFreeLives();
+
+        const p = currentPlayer();
+        const hadStrictFreeLife = getFreeLifeCountStrict(p) > 0;
+
+        const result = previousCheckAns.apply(this, arguments);
+
+        setTimeout(function(){
+          try{
+            const btns=[...document.querySelectorAll("#qAnswers .ans-btn")];
+            const clicked=btns[idx];
+            const wasWrong = clicked && clicked.classList.contains("wrong");
+
+            // If wrong and no strict Free Life remains, remove any old v86 prompt that may have appeared
+            // due to broad detection of "life/lives" fields.
+            if(wasWrong && !hadStrictFreeLife){
+              const prompt=document.getElementById("bpFreeLifePrompt");
+              if(prompt) prompt.remove();
+              const cont=document.getElementById("contBtn");
+              if(cont) cont.classList.remove("hidden");
+            }
+
+            // If v86 displayed the prompt, make its Use button consume the strict limited Free Life.
+            const useBtn=document.getElementById("bpUseFreeLifeBtn");
+            if(useBtn && !useBtn.__bpV95StrictBound){
+              useBtn.__bpV95StrictBound = true;
+              useBtn.addEventListener("pointerdown", function(e){
+                const player=currentPlayer();
+                if(!consumeFreeLifeStrict(player)){
+                  e.preventDefault();
+                  e.stopImmediatePropagation();
+                  const prompt=document.getElementById("bpFreeLifePrompt");
+                  if(prompt) prompt.remove();
+                  const cont=document.getElementById("contBtn");
+                  if(cont) cont.classList.remove("hidden");
+                }
+              }, {capture:true, passive:false});
+            }
+          }catch(e){}
+        }, 20);
+
+        return result;
+      };
+      window.checkAns.__bpV95FreeLifeStrict = true;
+      try{ checkAns = window.checkAns; }catch(e){}
+    }
+  }catch(e){}
+
+  // Safety: if old v86 consumes some other field but leaves our strict count unchanged,
+  // force strict count to 0 after the Free Life prompt creates a replacement question.
+  document.addEventListener("pointerdown", function(e){
+    const btn = e.target && e.target.closest ? e.target.closest("#bpUseFreeLifeBtn") : null;
+    if(!btn) return;
+    const p=currentPlayer();
+    if(getFreeLifeCountStrict(p) <= 0){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const prompt=document.getElementById("bpFreeLifePrompt");
+      if(prompt) prompt.remove();
+      const cont=document.getElementById("contBtn");
+      if(cont) cont.classList.remove("hidden");
+      return;
+    }
+    consumeFreeLifeStrict(p);
+  }, {capture:true, passive:false});
+
+  // Keep UI in sync after common updates.
+  ["updateUI","renderPlayers"].forEach(function(name){
+    try{
+      if(typeof window[name] === "function" && !window[name].__bpV95FreeLifeSync){
+        const old = window[name];
+        window[name] = function(){
+          normalizePlayerFreeLives();
+          return old.apply(this, arguments);
+        };
+        window[name].__bpV95FreeLifeSync = true;
+        try{ eval(name + "=window[name]"); }catch(e){}
+      }
+    }catch(e){}
+  });
+
+  normalizePlayerFreeLives();
+
+  window.BP_FREE_LIFE_STATUS = function(){
+    normalizePlayerFreeLives();
+    try{
+      return players.map(function(p,i){
+        return {index:i, name:p && p.name, freeLives:p ? p[FREE_LIFE_KEY] : 0};
+      });
+    }catch(e){
+      const p=currentPlayer();
+      return {player:p && p.name, freeLives:getFreeLifeCountStrict(p)};
+    }
+  };
+
+  console.log("v95 Free Life limited to one active");
+})();
+</script>
+
 </body>
 </html>
