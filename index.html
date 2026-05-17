@@ -31787,5 +31787,719 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   }
 </style>
 
+
+<!-- v98: Strict Free Life priority over Steal.
+     Steal is blocked while a wrong-answer Free Life decision is pending. -->
+<script id="bp-v98-free-life-blocks-steal-first">
+(function(){
+  if(window.__bpV98FreeLifeBlocksSteal) return;
+  window.__bpV98FreeLifeBlocksSteal = true;
+
+  const FREE_LIFE_KEY = "__bpFreeLives";
+  let freeLifeDecisionPending = false;
+  let wrongAnswerPending = false;
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function freeLivesLeft(){
+    const p = currentPlayer();
+    if(!p) return 0;
+    if(typeof p[FREE_LIFE_KEY] !== "number") p[FREE_LIFE_KEY] = 1;
+    p[FREE_LIFE_KEY] = Math.max(0, Math.min(1, Number(p[FREE_LIFE_KEY]) || 0));
+    return p[FREE_LIFE_KEY];
+  }
+
+  function consumeFreeLife(){
+    const p=currentPlayer();
+    if(!p || freeLivesLeft() <= 0) return false;
+    p[FREE_LIFE_KEY] = 0;
+    try{
+      if(p.powerCards && typeof p.powerCards === "object"){
+        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
+        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
+      }
+      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
+        if("freeLife" in p.cards) p.cards.freeLife = 0;
+        if("freeLives" in p.cards) p.cards.freeLives = 0;
+      }
+    }catch(e){}
+    try{ updateUI && updateUI(); }catch(e){}
+    return true;
+  }
+
+  function removeOldFreeLifePrompts(){
+    try{
+      ["bpFreeLifePrompt","bpV96FreeLifePrompt","bpV98FreeLifePrompt"].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.remove();
+      });
+    }catch(e){}
+  }
+
+  function hideStealUI(){
+    try{
+      document.querySelectorAll(
+        "[id*='steal' i],[class*='steal' i]"
+      ).forEach(function(el){
+        if(el.id === "bpV98FreeLifePrompt") return;
+        if(el.closest && el.closest("#bpV98FreeLifePrompt")) return;
+        el.classList.add("bp-v98-steal-blocked");
+        el.style.display = "none";
+      });
+    }catch(e){}
+  }
+
+  function revealStealUI(){
+    try{
+      document.querySelectorAll(".bp-v98-steal-blocked").forEach(function(el){
+        el.classList.remove("bp-v98-steal-blocked");
+        el.style.display = "";
+      });
+    }catch(e){}
+  }
+
+  function setFeedback(text, ok){
+    try{
+      const fb=document.getElementById("qFeedback");
+      if(fb){
+        fb.textContent=text || "";
+        fb.className="q-feedback " + (ok ? "ok" : "bad");
+      }
+    }catch(e){}
+  }
+
+  function renderAnswers(q){
+    const qa=document.getElementById("qAnswers");
+    if(!qa || !q || !Array.isArray(q.a)) return;
+    qa.innerHTML = q.a.map((ans,i)=>
+      `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
+    ).join("");
+  }
+
+  function newQuestionSameTurn(){
+    try{
+      const p=currentPlayer();
+      let did="00s";
+      try{
+        if(typeof getPlayerDecadeId === "function") did = getPlayerDecadeId(p);
+        else if(p && p._did) did = p._did;
+      }catch(e){}
+      const q = (typeof getFilteredQ === "function") ? getFilteredQ(did) :
+                (typeof getQ === "function") ? getQ(did) : null;
+      if(!q) return false;
+
+      curQ = q;
+      const qt=document.getElementById("qText");
+      if(qt) qt.textContent=q.q;
+      renderAnswers(q);
+      try{ waitingAnswer = true; }catch(e){}
+      document.querySelectorAll("#qAnswers .ans-btn").forEach(b=>{
+        b.disabled=false;
+        b.classList.remove("correct","wrong");
+      });
+      const cont=document.getElementById("contBtn");
+      if(cont) cont.classList.add("hidden");
+      setFeedback("", true);
+      return true;
+    }catch(e){
+      console.warn("v98 Free Life new question failed", e);
+      return false;
+    }
+  }
+
+  function showPrompt(){
+    if(document.getElementById("bpV98FreeLifePrompt")) return;
+    if(freeLivesLeft() <= 0) return;
+
+    freeLifeDecisionPending = true;
+    hideStealUI();
+    removeOldFreeLifePrompts();
+
+    const box=document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
+    const cont=document.getElementById("contBtn");
+    if(cont) cont.classList.add("hidden");
+
+    const prompt=document.createElement("div");
+    prompt.id="bpV98FreeLifePrompt";
+    prompt.className="bp-v98-free-life-prompt";
+    prompt.innerHTML = `
+      <div class="bp-v98-title">💚 Use Free Life?</div>
+      <div class="bp-v98-text">You missed it. Use your Free Life now for a new question, or decline to allow Steal.</div>
+      <div class="bp-v98-actions">
+        <button type="button" id="bpV98UseFreeLife" class="bp-v98-btn yes">Use Free Life</button>
+        <button type="button" id="bpV98DeclineFreeLife" class="bp-v98-btn no">Decline — Allow Steal</button>
+      </div>
+    `;
+
+    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
+    else box.appendChild(prompt);
+
+    document.getElementById("bpV98UseFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if(consumeFreeLife()){
+        try{ addLog("💚 Free Life used before Steal."); }catch(err){}
+        freeLifeDecisionPending = false;
+        wrongAnswerPending = false;
+        prompt.remove();
+
+        // Remove any steal UI that was created for this miss.
+        hideStealUI();
+        setTimeout(function(){
+          try{ document.querySelectorAll(".bp-v98-steal-blocked").forEach(el=>el.remove()); }catch(err){}
+        }, 10);
+
+        setFeedback("💚 Free Life used! Try a new question.", true);
+        if(!newQuestionSameTurn()){
+          const cont=document.getElementById("contBtn");
+          if(cont) cont.classList.remove("hidden");
+        }
+      }
+    }, {passive:false});
+
+    document.getElementById("bpV98DeclineFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      try{ addLog("💚 Free Life declined. Steal may be offered."); }catch(err){}
+      prompt.remove();
+      freeLifeDecisionPending = false;
+      wrongAnswerPending = false;
+      setFeedback("Free Life declined — Steal is available.", false);
+      revealStealUI();
+
+      // If the original steal flow was blocked before creating UI, trigger it now when possible.
+      try{
+        if(typeof showStealPrompt === "function") showStealPrompt();
+        else if(typeof offerSteal === "function") offerSteal();
+        else if(typeof promptSteal === "function") promptSteal();
+        else {
+          const cont=document.getElementById("contBtn");
+          if(cont) cont.classList.remove("hidden");
+        }
+      }catch(err){
+        const cont=document.getElementById("contBtn");
+        if(cont) cont.classList.remove("hidden");
+      }
+    }, {passive:false});
+  }
+
+  // Block steal availability while Free Life decision is pending.
+  try{
+    if(typeof window.checkStealAvailable === "function" && !window.checkStealAvailable.__bpV98){
+      const oldCheckStealAvailable = window.checkStealAvailable;
+      window.checkStealAvailable = function(){
+        if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
+          setTimeout(showPrompt, 0);
+          return false;
+        }
+        return oldCheckStealAvailable.apply(this, arguments);
+      };
+      window.checkStealAvailable.__bpV98 = true;
+      try{ checkStealAvailable = window.checkStealAvailable; }catch(e){}
+    }
+  }catch(e){}
+
+  // Block best stealer while pending, because some versions check this directly.
+  try{
+    if(typeof window.findBestStealer === "function" && !window.findBestStealer.__bpV98){
+      const oldFindBestStealer = window.findBestStealer;
+      window.findBestStealer = function(){
+        if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
+          setTimeout(showPrompt, 0);
+          return null;
+        }
+        return oldFindBestStealer.apply(this, arguments);
+      };
+      window.findBestStealer.__bpV98 = true;
+      try{ findBestStealer = window.findBestStealer; }catch(e){}
+    }
+  }catch(e){}
+
+  // Block common steal prompt functions if they exist.
+  ["showStealPrompt","offerSteal","promptSteal","openStealPrompt"].forEach(function(name){
+    try{
+      if(typeof window[name] === "function" && !window[name].__bpV98){
+        const old = window[name];
+        window[name] = function(){
+          if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
+            setTimeout(showPrompt, 0);
+            return;
+          }
+          return old.apply(this, arguments);
+        };
+        window[name].__bpV98 = true;
+        try{ eval(name + "=window[name]"); }catch(e){}
+      }
+    }catch(e){}
+  });
+
+  // Detect wrong answer immediately after the stable answer handler marks the clicked button.
+  function observeAnswer(btn){
+    if(!btn) return;
+    setTimeout(function(){
+      try{
+        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
+          wrongAnswerPending = true;
+          freeLifeDecisionPending = true;
+          hideStealUI();
+          showPrompt();
+        }
+      }catch(e){}
+    }, 20);
+    setTimeout(function(){
+      try{
+        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
+          wrongAnswerPending = true;
+          freeLifeDecisionPending = true;
+          hideStealUI();
+          showPrompt();
+        }
+      }catch(e){}
+    }, 90);
+  }
+
+  document.addEventListener("pointerdown", function(e){
+    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+    observeAnswer(btn);
+  }, true);
+
+  document.addEventListener("click", function(e){
+    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+    observeAnswer(btn);
+  }, true);
+
+  // If any steal UI appears while the Free Life prompt is pending, hide it.
+  try{
+    new MutationObserver(function(){
+      if((freeLifeDecisionPending || wrongAnswerPending) && freeLivesLeft() > 0){
+        hideStealUI();
+        showPrompt();
+      }
+    }).observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+
+  window.BP_FREE_LIFE_STEAL_PRIORITY_STATUS = function(){
+    return {
+      freeLivesLeft: freeLivesLeft(),
+      freeLifeDecisionPending,
+      wrongAnswerPending,
+      promptVisible: !!document.getElementById("bpV98FreeLifePrompt"),
+      hiddenStealNodes: document.querySelectorAll(".bp-v98-steal-blocked").length
+    };
+  };
+
+  console.log("v98 strict Free Life before Steal active");
+})();
+</script>
+
+<style id="bp-v98-free-life-priority-css">
+  .bp-v98-free-life-prompt{
+    margin:10px 0 12px;
+    padding:13px;
+    border-radius:15px;
+    border:1.5px solid rgba(82,183,136,.72);
+    background:linear-gradient(135deg,rgba(82,183,136,.22),rgba(82,183,136,.08));
+    box-shadow:0 0 28px rgba(82,183,136,.22);
+    text-align:center;
+  }
+  .bp-v98-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.28rem;
+    letter-spacing:.1em;
+    color:#52b788;
+    margin-bottom:4px;
+  }
+  .bp-v98-text{
+    font-size:.88rem;
+    color:#dceee5;
+    line-height:1.35;
+    margin-bottom:10px;
+    font-weight:800;
+  }
+  .bp-v98-actions{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+  }
+  .bp-v98-btn{
+    border:0;
+    border-radius:10px;
+    padding:9px 13px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:.08em;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bp-v98-btn.yes{
+    background:linear-gradient(135deg,#52b788,#2d9d66);
+    color:#04100a;
+    box-shadow:0 4px 14px rgba(82,183,136,.28);
+  }
+  .bp-v98-btn.no{
+    background:rgba(255,255,255,.06);
+    color:#f5c518;
+    border:1px solid rgba(245,197,24,.42);
+  }
+  .bp-v98-steal-blocked{
+    display:none!important;
+  }
+  @media(max-width:660px){
+    .bp-v98-actions{flex-direction:column;}
+    .bp-v98-btn{width:100%;}
+  }
+</style>
+
+
+<!-- v99: Free Life same-question retry.
+     Updated rule: Use Free Life = retry the SAME question, then consume the Free Life card.
+     Steal remains blocked unless Free Life is declined. -->
+<script id="bp-v99-free-life-same-question-retry">
+(function(){
+  if(window.__bpV99FreeLifeSameQuestion) return;
+  window.__bpV99FreeLifeSameQuestion = true;
+
+  const FREE_LIFE_KEY = "__bpFreeLives";
+  let savedQuestion = null;
+  let savedAnswers = null;
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function freeLivesLeft(){
+    const p = currentPlayer();
+    if(!p) return 0;
+    if(typeof p[FREE_LIFE_KEY] !== "number") p[FREE_LIFE_KEY] = 1;
+    p[FREE_LIFE_KEY] = Math.max(0, Math.min(1, Number(p[FREE_LIFE_KEY]) || 0));
+    return p[FREE_LIFE_KEY];
+  }
+
+  function consumeFreeLife(){
+    const p = currentPlayer();
+    if(!p || freeLivesLeft() <= 0) return false;
+
+    p[FREE_LIFE_KEY] = 0;
+
+    try{
+      if(p.powerCards && typeof p.powerCards === "object"){
+        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
+        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
+      }
+      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
+        if("freeLife" in p.cards) p.cards.freeLife = 0;
+        if("freeLives" in p.cards) p.cards.freeLives = 0;
+      }
+    }catch(e){}
+
+    try{ updateUI && updateUI(); }catch(e){}
+    return true;
+  }
+
+  function setFeedback(text, ok){
+    try{
+      const fb=document.getElementById("qFeedback");
+      if(fb){
+        fb.textContent=text || "";
+        fb.className="q-feedback " + (ok ? "ok" : "bad");
+      }
+    }catch(e){}
+  }
+
+  function saveCurrentQuestion(){
+    try{
+      savedQuestion = {
+        qText: document.getElementById("qText")?.textContent || "",
+        curQ: (typeof curQ !== "undefined" && curQ) ? JSON.parse(JSON.stringify(curQ)) : null
+      };
+
+      savedAnswers = [...document.querySelectorAll("#qAnswers .ans-btn")].map((btn, i) => ({
+        html: btn.innerHTML,
+        text: btn.textContent,
+        idx: btn.getAttribute("data-ans-idx") ?? String(i)
+      }));
+    }catch(e){
+      savedQuestion = null;
+      savedAnswers = null;
+    }
+  }
+
+  function restoreSameQuestionForRetry(){
+    try{
+      const qText = document.getElementById("qText");
+      if(savedQuestion && savedQuestion.qText && qText){
+        qText.textContent = savedQuestion.qText;
+      }
+
+      if(savedQuestion && savedQuestion.curQ && typeof curQ !== "undefined"){
+        curQ = savedQuestion.curQ;
+      }
+
+      const qa = document.getElementById("qAnswers");
+      if(qa && savedAnswers && savedAnswers.length){
+        qa.innerHTML = savedAnswers.map((a, i)=>
+          `<button class="ans-btn" type="button" data-ans-idx="${a.idx}">${a.html}</button>`
+        ).join("");
+      } else {
+        // Fallback: just re-enable existing buttons.
+        document.querySelectorAll("#qAnswers .ans-btn").forEach(btn=>{
+          btn.disabled = false;
+          btn.classList.remove("correct","wrong");
+        });
+      }
+
+      document.querySelectorAll("#qAnswers .ans-btn").forEach(btn=>{
+        btn.disabled = false;
+        btn.classList.remove("correct","wrong");
+        btn.blur && btn.blur();
+      });
+
+      try{ waitingAnswer = true; }catch(e){}
+
+      const cont = document.getElementById("contBtn");
+      if(cont) cont.classList.add("hidden");
+
+      setFeedback("💚 Free Life used — try the same question again.", true);
+      return true;
+    }catch(e){
+      console.warn("v99 same-question retry failed", e);
+      return false;
+    }
+  }
+
+  function removePrompts(){
+    ["bpV98FreeLifePrompt","bpV96FreeLifePrompt","bpFreeLifePrompt","bpV99FreeLifePrompt"].forEach(id=>{
+      try{
+        const el=document.getElementById(id);
+        if(el) el.remove();
+      }catch(e){}
+    });
+  }
+
+  function hideStealUI(){
+    try{
+      document.querySelectorAll("[id*='steal' i],[class*='steal' i]").forEach(el=>{
+        if(el.closest && el.closest("#bpV99FreeLifePrompt")) return;
+        el.classList.add("bp-v99-steal-blocked");
+        el.style.display = "none";
+      });
+    }catch(e){}
+  }
+
+  function showPrompt(){
+    if(document.getElementById("bpV99FreeLifePrompt")) return;
+    if(freeLivesLeft() <= 0) return;
+
+    hideStealUI();
+    removePrompts();
+
+    const box = document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
+    const cont = document.getElementById("contBtn");
+    if(cont) cont.classList.add("hidden");
+
+    const prompt = document.createElement("div");
+    prompt.id = "bpV99FreeLifePrompt";
+    prompt.className = "bp-v99-free-life-prompt";
+    prompt.innerHTML = `
+      <div class="bp-v99-title">💚 Use Free Life?</div>
+      <div class="bp-v99-text">Use your Free Life to try this same question again. The Free Life card will be used up.</div>
+      <div class="bp-v99-actions">
+        <button type="button" id="bpV99UseFreeLife" class="bp-v99-btn yes">Retry Same Question</button>
+        <button type="button" id="bpV99DeclineFreeLife" class="bp-v99-btn no">Decline — Allow Steal</button>
+      </div>
+    `;
+
+    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
+    else box.appendChild(prompt);
+
+    document.getElementById("bpV99UseFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if(!consumeFreeLife()){
+        prompt.remove();
+        if(cont) cont.classList.remove("hidden");
+        return;
+      }
+
+      try{ addLog("💚 Free Life used — retrying the same question."); }catch(err){}
+      prompt.remove();
+
+      // Remove any steal prompt created from the miss.
+      try{
+        document.querySelectorAll(".bp-v99-steal-blocked,.bp-v98-steal-blocked,[data-bp-v96-hidden-steal='1']").forEach(el=>{
+          try{ el.remove(); }catch(err){ el.style.display="none"; }
+        });
+      }catch(err){}
+
+      restoreSameQuestionForRetry();
+    }, {passive:false});
+
+    document.getElementById("bpV99DeclineFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      prompt.remove();
+      setFeedback("Free Life declined — Steal is available.", false);
+
+      // Let existing v98/v96 decline buttons or steal flow handle it when possible.
+      try{
+        document.querySelectorAll(".bp-v99-steal-blocked,.bp-v98-steal-blocked,.bp-v96-steal-hidden,[data-bp-v96-hidden-steal='1']").forEach(el=>{
+          el.classList.remove("bp-v99-steal-blocked","bp-v98-steal-blocked","bp-v96-steal-hidden");
+          el.style.display = "";
+          delete el.dataset.bpV96HiddenSteal;
+        });
+      }catch(err){}
+
+      try{
+        if(typeof showStealPrompt === "function") showStealPrompt();
+        else if(typeof offerSteal === "function") offerSteal();
+        else if(typeof promptSteal === "function") promptSteal();
+        else {
+          const c=document.getElementById("contBtn");
+          if(c) c.classList.remove("hidden");
+        }
+      }catch(err){
+        const c=document.getElementById("contBtn");
+        if(c) c.classList.remove("hidden");
+      }
+    }, {passive:false});
+  }
+
+  function observeAnswer(btn){
+    if(!btn) return;
+
+    // Capture the current question before the original answer flow changes button state.
+    saveCurrentQuestion();
+
+    setTimeout(function(){
+      try{
+        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
+          hideStealUI();
+          showPrompt();
+        }
+      }catch(e){}
+    }, 15);
+
+    setTimeout(function(){
+      try{
+        if(btn.classList.contains("wrong") && freeLivesLeft() > 0){
+          hideStealUI();
+          showPrompt();
+        }
+      }catch(e){}
+    }, 90);
+  }
+
+  document.addEventListener("pointerdown", function(e){
+    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+    observeAnswer(btn);
+  }, true);
+
+  document.addEventListener("click", function(e){
+    const btn=e.target && e.target.closest ? e.target.closest("#qAnswers .ans-btn") : null;
+    if(!btn) return;
+    observeAnswer(btn);
+  }, true);
+
+  // Override older v98 Use button if it still appears first: convert it to same-question retry.
+  document.addEventListener("pointerdown", function(e){
+    const btn=e.target && e.target.closest ? e.target.closest("#bpV98UseFreeLife,#bpV96UseFreeLife,#bpUseFreeLifeBtn") : null;
+    if(!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    if(consumeFreeLife()){
+      removePrompts();
+      try{ addLog("💚 Free Life used — retrying the same question."); }catch(err){}
+      restoreSameQuestionForRetry();
+    }
+  }, {capture:true, passive:false});
+
+  window.BP_FREE_LIFE_RETRY_STATUS = function(){
+    return {
+      freeLivesLeft: freeLivesLeft(),
+      savedQuestionText: savedQuestion && savedQuestion.qText,
+      savedAnswerCount: savedAnswers ? savedAnswers.length : 0
+    };
+  };
+
+  console.log("v99 Free Life same-question retry active");
+})();
+</script>
+
+<style id="bp-v99-free-life-css">
+  .bp-v99-free-life-prompt{
+    margin:10px 0 12px;
+    padding:13px;
+    border-radius:15px;
+    border:1.5px solid rgba(82,183,136,.72);
+    background:linear-gradient(135deg,rgba(82,183,136,.22),rgba(82,183,136,.08));
+    box-shadow:0 0 28px rgba(82,183,136,.22);
+    text-align:center;
+  }
+  .bp-v99-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.28rem;
+    letter-spacing:.1em;
+    color:#52b788;
+    margin-bottom:4px;
+  }
+  .bp-v99-text{
+    font-size:.88rem;
+    color:#dceee5;
+    line-height:1.35;
+    margin-bottom:10px;
+    font-weight:800;
+  }
+  .bp-v99-actions{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+  }
+  .bp-v99-btn{
+    border:0;
+    border-radius:10px;
+    padding:9px 13px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:.08em;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bp-v99-btn.yes{
+    background:linear-gradient(135deg,#52b788,#2d9d66);
+    color:#04100a;
+    box-shadow:0 4px 14px rgba(82,183,136,.28);
+  }
+  .bp-v99-btn.no{
+    background:rgba(255,255,255,.06);
+    color:#f5c518;
+    border:1px solid rgba(245,197,24,.42);
+  }
+  .bp-v99-steal-blocked{
+    display:none!important;
+  }
+  @media(max-width:660px){
+    .bp-v99-actions{flex-direction:column;}
+    .bp-v99-btn{width:100%;}
+  }
+</style>
+
 </body>
 </html>
