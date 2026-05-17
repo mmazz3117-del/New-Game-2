@@ -32654,5 +32654,298 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   }
 </style>
 
+
+<!-- v101: Direct offerSteal intercept for Free Life priority.
+     This blocks the actual Steal prompt function until Free Life is used or declined. -->
+<script id="bp-v101-offer-steal-free-life-intercept">
+(function(){
+  if(window.__bpV101OfferStealIntercept) return;
+  window.__bpV101OfferStealIntercept = true;
+
+  const FREE_LIFE_KEY = "__bpFreeLives";
+  let bypassFreeLifeForSteal = false;
+  let savedQuestionForRetry = null;
+
+  function currentPlayer(){
+    try{return players && players[curPlayer] ? players[curPlayer] : null;}catch(e){return null;}
+  }
+
+  function freeLivesLeft(){
+    const p = currentPlayer();
+    if(!p) return 0;
+
+    // v95/v100 key
+    if(typeof p[FREE_LIFE_KEY] === "number"){
+      p[FREE_LIFE_KEY] = Math.max(0, Math.min(1, Number(p[FREE_LIFE_KEY]) || 0));
+      return p[FREE_LIFE_KEY];
+    }
+
+    // If the game shows Free Life but v95 key was never initialized for this player,
+    // initialize to 1. This is still capped and consumed once.
+    p[FREE_LIFE_KEY] = 1;
+    return 1;
+  }
+
+  function consumeFreeLife(){
+    const p=currentPlayer();
+    if(!p || freeLivesLeft() <= 0) return false;
+
+    p[FREE_LIFE_KEY] = 0;
+
+    try{
+      if(p.powerCards && typeof p.powerCards === "object"){
+        if("freeLife" in p.powerCards) p.powerCards.freeLife = 0;
+        if("freeLives" in p.powerCards) p.powerCards.freeLives = 0;
+      }
+      if(p.cards && typeof p.cards === "object" && !Array.isArray(p.cards)){
+        if("freeLife" in p.cards) p.cards.freeLife = 0;
+        if("freeLives" in p.cards) p.cards.freeLives = 0;
+      }
+    }catch(e){}
+
+    try{ updateUI && updateUI(); }catch(e){}
+    return true;
+  }
+
+  function saveCurrentQuestion(){
+    try{
+      savedQuestionForRetry = curQ ? JSON.parse(JSON.stringify(curQ)) : null;
+    }catch(e){
+      savedQuestionForRetry = curQ || null;
+    }
+  }
+
+  function retrySameQuestion(){
+    const q = savedQuestionForRetry || curQ;
+    if(!q) return false;
+
+    try{ curQ = q; }catch(e){}
+
+    const qText = document.getElementById("qText");
+    if(qText) qText.textContent = q.q;
+
+    const qa = document.getElementById("qAnswers");
+    if(qa && Array.isArray(q.a)){
+      qa.innerHTML = q.a.map((ans,i)=>
+        `<button class="ans-btn" type="button" data-ans-idx="${i}">${["A","B","C","D"][i]}. ${ans}</button>`
+      ).join("");
+    }
+
+    document.querySelectorAll("#qAnswers .ans-btn").forEach(btn=>{
+      btn.disabled = false;
+      btn.classList.remove("correct","wrong");
+      try{ btn.blur(); }catch(e){}
+    });
+
+    const steal = document.getElementById("stealPrompt");
+    if(steal) steal.classList.add("hidden");
+
+    const cont = document.getElementById("contBtn");
+    if(cont) cont.classList.add("hidden");
+
+    const fb = document.getElementById("qFb") || document.getElementById("qFeedback");
+    if(fb){
+      fb.textContent = "💚 Free Life used — try the same question again.";
+      fb.className = "q-feedback ok";
+    }
+
+    try{
+      waitingAnswer = true;
+      answeredCorrect = false;
+      stealMode = false;
+      stealerIdx = null;
+      startTimer && startTimer();
+    }catch(e){}
+
+    return true;
+  }
+
+  function hideStealPrompt(){
+    try{
+      const steal = document.getElementById("stealPrompt");
+      if(steal) steal.classList.add("hidden");
+    }catch(e){}
+  }
+
+  function showFreeLifePromptBeforeSteal(originalOfferSteal, originalArgs){
+    if(document.getElementById("bpV101FreeLifePrompt")) return;
+
+    hideStealPrompt();
+    saveCurrentQuestion();
+
+    const cont = document.getElementById("contBtn");
+    if(cont) cont.classList.add("hidden");
+
+    const fb = document.getElementById("qFb") || document.getElementById("qFeedback");
+    if(fb){
+      fb.textContent = "❌ Wrong — Free Life available.";
+      fb.className = "q-feedback bad";
+    }
+
+    const prompt = document.createElement("div");
+    prompt.id = "bpV101FreeLifePrompt";
+    prompt.className = "bp-v101-free-life-prompt";
+    prompt.innerHTML = `
+      <div class="bp-v101-title">💚 Use Free Life?</div>
+      <div class="bp-v101-text">Retry this same question before anyone can steal. Your Free Life card will be used up.</div>
+      <div class="bp-v101-actions">
+        <button type="button" id="bpV101UseFreeLife" class="bp-v101-btn yes">Retry Same Question</button>
+        <button type="button" id="bpV101DeclineFreeLife" class="bp-v101-btn no">Decline — Allow Steal</button>
+      </div>
+    `;
+
+    const box = document.querySelector(".q-box") || document.getElementById("qOverlay") || document.body;
+    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
+    else box.appendChild(prompt);
+
+    document.getElementById("bpV101UseFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if(consumeFreeLife()){
+        try{ addLog("💚 " + ((currentPlayer() && currentPlayer().name) || "Player") + " used Free Life before Steal."); }catch(err){}
+        prompt.remove();
+        hideStealPrompt();
+        retrySameQuestion();
+      }
+    }, {passive:false});
+
+    document.getElementById("bpV101DeclineFreeLife").addEventListener("pointerdown", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      prompt.remove();
+      try{ addLog("💚 Free Life declined — Steal offered."); }catch(err){}
+
+      bypassFreeLifeForSteal = true;
+      try{
+        originalOfferSteal.apply(window, originalArgs || []);
+      } finally {
+        bypassFreeLifeForSteal = false;
+      }
+    }, {passive:false});
+  }
+
+  function installOfferStealIntercept(){
+    try{
+      if(typeof window.offerSteal !== "function") return false;
+      if(window.offerSteal.__bpV101Intercepted) return true;
+
+      const originalOfferSteal = window.offerSteal;
+      window.offerSteal = function(){
+        // If Free Life exists, intercept before the Steal prompt is built.
+        if(!bypassFreeLifeForSteal && freeLivesLeft() > 0){
+          showFreeLifePromptBeforeSteal(originalOfferSteal, arguments);
+          return;
+        }
+        return originalOfferSteal.apply(this, arguments);
+      };
+
+      window.offerSteal.__bpV101Intercepted = true;
+      try{ offerSteal = window.offerSteal; }catch(e){}
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  // Install now and again shortly after load in case another patch reassigns offerSteal.
+  installOfferStealIntercept();
+  setTimeout(installOfferStealIntercept, 200);
+  setTimeout(installOfferStealIntercept, 800);
+
+  // Extra guard: if the Steal panel appears while current player still has Free Life, hide it and show Free Life.
+  try{
+    new MutationObserver(function(){
+      const steal = document.getElementById("stealPrompt");
+      if(!steal) return;
+      const visible = !steal.classList.contains("hidden");
+      if(visible && freeLivesLeft() > 0 && !bypassFreeLifeForSteal){
+        steal.classList.add("hidden");
+        if(typeof window.offerSteal === "function"){
+          // We cannot call offerSteal here or it loops; instead build the prompt directly.
+          const original = window.offerSteal.__original || function(){};
+          showFreeLifePromptBeforeSteal(function(){
+            bypassFreeLifeForSteal = true;
+            steal.classList.remove("hidden");
+            bypassFreeLifeForSteal = false;
+          }, []);
+        }
+      }
+    }).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["class","style"]});
+  }catch(e){}
+
+  window.BP_OFFER_STEAL_INTERCEPT_STATUS = function(){
+    return {
+      installed: !!(window.offerSteal && window.offerSteal.__bpV101Intercepted),
+      freeLivesLeft: freeLivesLeft(),
+      bypassFreeLifeForSteal,
+      promptVisible: !!document.getElementById("bpV101FreeLifePrompt"),
+      stealHidden: document.getElementById("stealPrompt")?.classList.contains("hidden")
+    };
+  };
+
+  console.log("v101 offerSteal Free Life intercept active");
+})();
+</script>
+
+<style id="bp-v101-free-life-priority-css">
+  .bp-v101-free-life-prompt{
+    margin:10px 0 12px;
+    padding:13px;
+    border-radius:15px;
+    border:1.5px solid rgba(82,183,136,.72);
+    background:linear-gradient(135deg,rgba(82,183,136,.22),rgba(82,183,136,.08));
+    box-shadow:0 0 28px rgba(82,183,136,.22);
+    text-align:center;
+  }
+  .bp-v101-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.28rem;
+    letter-spacing:.1em;
+    color:#52b788;
+    margin-bottom:4px;
+  }
+  .bp-v101-text{
+    font-size:.88rem;
+    color:#dceee5;
+    line-height:1.35;
+    margin-bottom:10px;
+    font-weight:800;
+  }
+  .bp-v101-actions{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+  }
+  .bp-v101-btn{
+    border:0;
+    border-radius:10px;
+    padding:9px 13px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:.08em;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bp-v101-btn.yes{
+    background:linear-gradient(135deg,#52b788,#2d9d66);
+    color:#04100a;
+    box-shadow:0 4px 14px rgba(82,183,136,.28);
+  }
+  .bp-v101-btn.no{
+    background:rgba(255,255,255,.06);
+    color:#f5c518;
+    border:1px solid rgba(245,197,24,.42);
+  }
+  @media(max-width:660px){
+    .bp-v101-actions{flex-direction:column;}
+    .bp-v101-btn{width:100%;}
+  }
+</style>
+
 </body>
 </html>
