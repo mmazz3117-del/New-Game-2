@@ -6307,18 +6307,113 @@ function checkAns(idx){
 }
 
 function handlePostAnswer(){
-  // Called only when original player got it wrong
-  // Decide: is there a valid stealer? If yes, offer. If no, reveal answer.
+  // Called only when original player got it wrong.
+  // v100 rule: Free Life must be offered BEFORE Steal.
   document.getElementById('stealPrompt').classList.add('hidden');
-  document.getElementById('contBtn').classList.add('hidden'); // ALWAYS keep hidden until steal resolves
-  if(checkStealAvailable()){
-    offerSteal();
-  } else {
-    revealAnswer();
-    document.getElementById('qFb').textContent=`❌ Wrong! Answer: ${curQ?curQ.a[curQ.c]:'—'}`;
-    document.getElementById('qFb').className='q-feedback bad';
-    document.getElementById('contBtn').classList.remove('hidden');
+  document.getElementById('contBtn').classList.add('hidden');
+
+  const player = players[curPlayer];
+
+  function v100GetFreeLifeCount(p){
+    if(!p) return 0;
+    if(typeof p.__bpFreeLives !== 'number') p.__bpFreeLives = 1;
+    p.__bpFreeLives = Math.max(0, Math.min(1, Number(p.__bpFreeLives)||0));
+    return p.__bpFreeLives;
   }
+
+  function v100ConsumeFreeLife(p){
+    if(!p || v100GetFreeLifeCount(p) <= 0) return false;
+    p.__bpFreeLives = 0;
+    try{
+      if(p.powerCards && typeof p.powerCards === 'object'){
+        if('freeLife' in p.powerCards) p.powerCards.freeLife = 0;
+        if('freeLives' in p.powerCards) p.powerCards.freeLives = 0;
+      }
+      if(p.cards && typeof p.cards === 'object' && !Array.isArray(p.cards)){
+        if('freeLife' in p.cards) p.cards.freeLife = 0;
+        if('freeLives' in p.cards) p.cards.freeLives = 0;
+      }
+    }catch(e){}
+    return true;
+  }
+
+  function v100RenderSameQuestionRetry(){
+    if(!curQ) return false;
+    const qa = document.getElementById('qAnswers');
+    if(!qa) return false;
+    qa.innerHTML = curQ.a.map((ans,i)=>
+      `<button class="ans-btn" type="button" data-ans-idx="${i}">${['A','B','C','D'][i]}. ${ans}</button>`
+    ).join('');
+    document.querySelectorAll('#qAnswers .ans-btn').forEach(b=>{
+      b.disabled=false;
+      b.classList.remove('correct','wrong');
+    });
+    document.getElementById('qFb').textContent='💚 Free Life used — try the same question again.';
+    document.getElementById('qFb').className='q-feedback ok';
+    document.getElementById('contBtn').classList.add('hidden');
+    document.getElementById('stealPrompt').classList.add('hidden');
+    waitingAnswer=true;
+    answeredCorrect=false;
+    try{ updateUI(); }catch(e){}
+    return true;
+  }
+
+  function v100ContinueToStealOrReveal(){
+    document.getElementById('stealPrompt').classList.add('hidden');
+    document.getElementById('contBtn').classList.add('hidden');
+    if(checkStealAvailable()){
+      offerSteal();
+    } else {
+      revealAnswer();
+      document.getElementById('qFb').textContent=`❌ Wrong! Answer: ${curQ?curQ.a[curQ.c]:'—'}`;
+      document.getElementById('qFb').className='q-feedback bad';
+      document.getElementById('contBtn').classList.remove('hidden');
+    }
+  }
+
+  // Free Life gets first refusal.
+  if(!stealMode && v100GetFreeLifeCount(player) > 0){
+    const existing = document.getElementById('bpV100FreeLifePrompt');
+    if(existing) existing.remove();
+
+    const prompt = document.createElement('div');
+    prompt.id = 'bpV100FreeLifePrompt';
+    prompt.className = 'bp-v100-free-life-prompt';
+    prompt.innerHTML = `
+      <div class="bp-v100-title">💚 Use Free Life?</div>
+      <div class="bp-v100-text">Retry this same question. Your Free Life card will be used up.</div>
+      <div class="bp-v100-actions">
+        <button type="button" id="bpV100UseFreeLife" class="bp-v100-btn yes">Retry Same Question</button>
+        <button type="button" id="bpV100DeclineFreeLife" class="bp-v100-btn no">Decline — Allow Steal</button>
+      </div>
+    `;
+
+    const cont = document.getElementById('contBtn');
+    if(cont && cont.parentNode) cont.parentNode.insertBefore(prompt, cont);
+    else document.querySelector('.q-box').appendChild(prompt);
+
+    document.getElementById('bpV100UseFreeLife').addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(v100ConsumeFreeLife(player)){
+        try{ addLog(`💚 ${player.name} used a Free Life and retries the same question.`); }catch(err){}
+        prompt.remove();
+        v100RenderSameQuestionRetry();
+      }
+    }, {passive:false});
+
+    document.getElementById('bpV100DeclineFreeLife').addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      try{ addLog(`💚 ${player.name} declined Free Life — Steal may be offered.`); }catch(err){}
+      prompt.remove();
+      v100ContinueToStealOrReveal();
+    }, {passive:false});
+
+    return;
+  }
+
+  v100ContinueToStealOrReveal();
 }
 
 function checkStealAvailable(){
@@ -32498,6 +32593,64 @@ console.log('DIVERSE_90S_2000S_EXPANSION_200: '+DIVERSE_90S_2000S_EXPANSION_200.
   @media(max-width:660px){
     .bp-v99-actions{flex-direction:column;}
     .bp-v99-btn{width:100%;}
+  }
+</style>
+
+
+<!-- v100 core Free Life prompt styling -->
+<style id="bp-v100-free-life-core-css">
+  .bp-v100-free-life-prompt{
+    margin:10px 0 12px;
+    padding:13px;
+    border-radius:15px;
+    border:1.5px solid rgba(82,183,136,.72);
+    background:linear-gradient(135deg,rgba(82,183,136,.22),rgba(82,183,136,.08));
+    box-shadow:0 0 28px rgba(82,183,136,.22);
+    text-align:center;
+  }
+  .bp-v100-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.28rem;
+    letter-spacing:.1em;
+    color:#52b788;
+    margin-bottom:4px;
+  }
+  .bp-v100-text{
+    font-size:.88rem;
+    color:#dceee5;
+    line-height:1.35;
+    margin-bottom:10px;
+    font-weight:800;
+  }
+  .bp-v100-actions{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+  }
+  .bp-v100-btn{
+    border:0;
+    border-radius:10px;
+    padding:9px 13px;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:.08em;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bp-v100-btn.yes{
+    background:linear-gradient(135deg,#52b788,#2d9d66);
+    color:#04100a;
+    box-shadow:0 4px 14px rgba(82,183,136,.28);
+  }
+  .bp-v100-btn.no{
+    background:rgba(255,255,255,.06);
+    color:#f5c518;
+    border:1px solid rgba(245,197,24,.42);
+  }
+  @media(max-width:660px){
+    .bp-v100-actions{flex-direction:column;}
+    .bp-v100-btn{width:100%;}
   }
 </style>
 
